@@ -1,0 +1,11 @@
+{
+  "codeowners": ["@koenhendriks"],
+  "config_flow": false,
+  "dependencies": [],
+  "documentation": "https://github.com/koenhendriks/ha-ecoforest",
+  "domain": "ecoforest",
+  "iot_class": "calculated",
+  "name": "Ecoforest",
+  "requirements": ["aiohttp"],
+  "version": "1.0.0"
+}
