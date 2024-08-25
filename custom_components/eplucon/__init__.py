@@ -11,7 +11,7 @@ _LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Button+ from a config entry."""
-    _LOGGER.debug(f"Ecoforest init got new device entry! {entry.entry_id.title}")
+    _LOGGER.debug(f"Eplucon init got new device entry! {entry.entry_id.title}")
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = EpluconApi('123', aiohttp_client.async_get_clientsession(hass))
 

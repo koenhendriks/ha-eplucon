@@ -1,3 +1,3 @@
-# Ecoforest for Home Assistant
+# Eplucon for Home Assistant
 
 ## Installation

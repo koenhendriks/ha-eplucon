@@ -21,7 +21,7 @@ class ApiError(Exception):
 
 
 class EpluconApi:
-    """Client to talk to Ecoforest API"""
+    """Client to talk to Eplucon API"""
 
     def __init__(self, api_token: str, session: Optional[aiohttp.ClientSession] = None) -> None:
         self._base = BASE_URL
@@ -32,11 +32,11 @@ class EpluconApi:
             "Authorization": f"Bearer {api_token}"
         }
 
-        _LOGGER.debug("Initialize Ecoforest API client")
+        _LOGGER.debug("Initialize Eplucon API client")
 
     async def get_devices(self) -> list[DeviceDTO]:
         url = f"{self._base}/econtrol/modules"
-        _LOGGER.debug(f"Ecoforest Get devices {url}")
+        _LOGGER.debug(f"Eplucon Get devices {url}")
         async with self._session.get(url, headers=self._headers) as response:
             devices = await response.json()
             self.validate_response(devices)
@@ -45,7 +45,7 @@ class EpluconApi:
 
     async def get_realtime_info(self, module_id: int) -> RealtimeInfoDTO:
         url = f"{self._base}/econtrol/modules/{module_id}/get_realtime_info"
-        _LOGGER.debug(f"Ecoforest Get realtime info for {module_id}: {url}")
+        _LOGGER.debug(f"Eplucon Get realtime info for {module_id}: {url}")
 
         async with self._session.get(url, headers=self._headers) as response:
             data = await response.json()
@@ -60,7 +60,7 @@ class EpluconApi:
     @staticmethod
     def validate_response(response: Any) -> None:
         if 'auth' not in response:
-            raise ApiError('Error from Ecoforest API, expecting auth key in response.')
+            raise ApiError('Error from Eplucon API, expecting auth key in response.')
 
         if not response['auth']:
             raise ApiAuthError("Authentication failed: Please check the given API key.")

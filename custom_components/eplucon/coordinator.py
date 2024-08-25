@@ -27,8 +27,8 @@ async def async_setup_entry(
         async_add_entities: Callable
 ) -> None:
     # assuming API object stored here by __init__.py
-    ecoforest_api = hass.data[DOMAIN][entry.entry_id]
-    coordinator = EcoforestCoordinator(hass, ecoforest_api)
+    eplucon_api = hass.data[DOMAIN][entry.entry_id]
+    coordinator = EpluconCoordinator(hass, eplucon_api)
 
     await coordinator.async_config_entry_first_refresh()
 
@@ -37,19 +37,19 @@ async def async_setup_entry(
     )
 
 
-class EcoforestCoordinator(DataUpdateCoordinator):
-    """Ecoforest coordinator."""
+class EpluconCoordinator(DataUpdateCoordinator):
+    """Eplucon coordinator."""
 
-    def __init__(self, hass: HomeAssistant, ecoforest_api) -> None:
+    def __init__(self, hass: HomeAssistant, eplucon_api) -> None:
         """Initialize my coordinator."""
         super().__init__(
             hass,
             _LOGGER,
-            name="Ecoforest Heat Pump",
+            name="Eplucon Heat Pump",
             update_interval=timedelta(seconds=30),
             always_update=True
         )
-        self.ecoforest_api = ecoforest_api
+        self.eplucon_api = eplucon_api
         self._device: EpluconDevice | None = None
 
     async def _async_setup(self) -> None:
@@ -61,7 +61,7 @@ class EcoforestCoordinator(DataUpdateCoordinator):
         This method will be called automatically during
         coordinator.async_config_entry_first_refresh.
         """
-        self._device = await self.ecoforest_api.get_device()
+        self._device = await self.eplucon_api.get_device()
 
     async def _async_update_data(self)  -> _DataT:
         """Fetch data from API endpoint.
@@ -73,7 +73,7 @@ class EcoforestCoordinator(DataUpdateCoordinator):
             # Note: asyncio.TimeoutError and aiohttp.ClientError are already
             # handled by the data update coordinator.
             async with async_timeout.timeout(10):
-                return await self.ecoforest_api.fetch_data()
+                return await self.eplucon_api.fetch_data()
         except ApiAuthError as err:
             # Raising ConfigEntryAuthFailed will cancel future updates
             # and start a config flow with SOURCE_REAUTH (async_step_reauth)

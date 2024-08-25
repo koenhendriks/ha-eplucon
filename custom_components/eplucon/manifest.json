@@ -2,10 +2,10 @@
   "codeowners": ["@koenhendriks"],
   "config_flow": false,
   "dependencies": [],
-  "documentation": "https://github.com/koenhendriks/ha-ecoforest",
-  "domain": "ecoforest",
+  "documentation": "https://github.com/koenhendriks/ha-eplucon",
+  "domain": "eplucon",
   "iot_class": "calculated",
-  "name": "Ecoforest",
+  "name": "Eplucon",
   "requirements": ["aiohttp"],
   "version": "1.0.0"
 }

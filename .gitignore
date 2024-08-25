@@ -185,4 +185,4 @@ fabric.properties
 .idea
 
 ha_config
-custom_components/ecoforest/test.py
+custom_components/eplucon/test.py

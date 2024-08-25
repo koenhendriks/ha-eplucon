@@ -1,7 +1,7 @@
 """Test component setup."""
 from homeassistant.setup import async_setup_component
 
-from custom_components.ecoforest.const import DOMAIN
+from custom_components.eplucon.const import DOMAIN
 
 
 async def test_async_setup(hass):
