@@ -1,8 +1,7 @@
 from dataclasses import dataclass
 from typing import List
 
-from eplucon_api.DTO import CommonInfoDTO
-
+from . import CommonInfoDTO
 
 @dataclass
 class RealtimeInfoDTO:

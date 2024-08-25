@@ -1,6 +1,6 @@
 {
   "codeowners": ["@koenhendriks"],
-  "config_flow": false,
+  "config_flow": true,
   "dependencies": [],
   "documentation": "https://github.com/koenhendriks/ha-eplucon",
   "domain": "eplucon",

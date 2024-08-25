@@ -1,14 +1,10 @@
 from datetime import timedelta
 import logging
+import async_timeout
 from homeassistant.config_entries import ConfigEntry
 from typing import Callable
 
 from device import EpluconDevice
-
-_LOGGER = logging.getLogger(__name__)
-
-import async_timeout
-
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.core import callback, HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
@@ -19,6 +15,8 @@ from homeassistant.helpers.update_coordinator import (
 )
 
 from .const import DOMAIN
+
+_LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(
@@ -63,7 +61,7 @@ class EpluconCoordinator(DataUpdateCoordinator):
         """
         self._device = await self.eplucon_api.get_device()
 
-    async def _async_update_data(self)  -> _DataT:
+    async def _async_update_data(self) -> _DataT:
         """Fetch data from API endpoint.
 
         This is the place to pre-process the data to lookup tables

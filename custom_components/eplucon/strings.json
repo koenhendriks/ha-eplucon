@@ -1,0 +1,38 @@
+{
+    "title": "Eplucon",
+    "config": {
+        "step": {
+            "user": {
+                "title": "Connect to Eplucon",
+                "description": "Please enter your API token to connect to the Eplucon service.",
+                "data": {
+                    "api_token": "API Token"
+                }
+            }
+        },
+        "error": {
+            "auth": "Authentication failed. Please check your API token.",
+            "api": "Failed to connect to the Eplucon API. Please try again later.",
+            "unknown": "An unexpected error occurred. Please try again.",
+            "no-devices": "No devices found. Ensure you're device is added at Eplucon's website"
+        },
+        "abort": {
+            "single_instance_allowed": "Only a single instance of Eplucon is allowed."
+        },
+        "user": {
+            "data": {
+                "api_token": "API token to access Eplucon."
+            },
+            "data_description": {
+                "api_token": "Can be created at https://portaal.eplucon.nl/account/api_tokens"
+            }
+          },
+    "options": {
+        "step": {
+            "init": {
+                "title": "Configure Eplucon Options",
+                "description": "Manage options for Eplucon integration."
+            }
+        }
+    }
+}

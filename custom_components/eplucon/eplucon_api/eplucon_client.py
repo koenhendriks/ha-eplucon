@@ -4,9 +4,9 @@ import aiohttp
 import logging
 from typing import Any, Optional
 
-from eplucon_api.DTO.CommonInfoDTO import CommonInfoDTO
-from eplucon_api.DTO.DeviceDTO import DeviceDTO
-from eplucon_api.DTO.RealtimeInfoDTO import RealtimeInfoDTO
+from .DTO.CommonInfoDTO import CommonInfoDTO
+from .DTO.DeviceDTO import DeviceDTO
+from .DTO.RealtimeInfoDTO import RealtimeInfoDTO
 
 BASE_URL = "https://portaal.eplucon.nl/api/v2"
 _LOGGER: logging.Logger = logging.getLogger(__package__)
