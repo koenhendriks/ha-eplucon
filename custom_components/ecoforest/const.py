@@ -1,1 +1,2 @@
 DOMAIN = "ecoforest"
+MANUFACTURER = "Eplucon"
