@@ -1,7 +1,7 @@
 {
   "codeowners": ["@koenhendriks"],
   "config_flow": true,
-  "dependencies": [],
+  "dependencies": ["sensor"],
   "documentation": "https://github.com/koenhendriks/ha-eplucon",
   "domain": "eplucon",
   "iot_class": "calculated",

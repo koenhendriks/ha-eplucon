@@ -43,12 +43,12 @@ class EpluconCoordinator(DataUpdateCoordinator):
         super().__init__(
             hass,
             _LOGGER,
-            name="Eplucon Heat Pump",
+            name="Eplucon Coordinator",
             update_interval=timedelta(seconds=30),
             always_update=True
         )
         self.eplucon_api = eplucon_api
-        self._device: EpluconDevice | None = None
+        self._devices: EpluconDevice | None = None
 
     async def _async_setup(self) -> None:
         """Set up the coordinator

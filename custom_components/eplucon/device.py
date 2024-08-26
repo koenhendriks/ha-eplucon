@@ -8,6 +8,8 @@ from .const import DOMAIN, MANUFACTURER
 
 import logging
 
+from .eplucon_api.DTO.DeviceDTO import DeviceDTO
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -16,17 +18,16 @@ class EpluconDevice:
             self,
             hass: HomeAssistant,
             entry: ConfigEntry,
-            module_id: str,
+            device: DeviceDTO,
     ) -> None:
         _LOGGER.info(
-            f"Init EpluconDevice with id '{module_id}'"
+            f"Init EpluconDevice with id '{device.id}'"
         )
         self.device_registry = dr.async_get(hass)
         self.device = self.device_registry.async_get_or_create(
             config_entry_id=entry.entry_id,
-            connections={(DOMAIN, hub.config.identifier())},
-            name=f"Eplucon device {module_id}",
-            model="Heat Pump",
+            name=f"Eplucon {device.name}",
+            model=f"{device.type}",
             manufacturer=MANUFACTURER,
-            identifiers={(DOMAIN, f"Eplucon {module_id}")}
+            identifiers={(DOMAIN, f"Eplucon {device.id}")}
         )
