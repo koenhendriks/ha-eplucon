@@ -57,8 +57,6 @@ class EpluconConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 _LOGGER.exception("Unexpected exception: %s", e)
                 errors["base"] = "unknown"
 
-        _LOGGER.info("Errors: %s", errors)
-
         # If the user input is not valid or an error occurred, show the form again with the error message
         return self.async_show_form(
             step_id="user",
@@ -82,8 +80,54 @@ class EpluconOptionsFlowHandler(config_entries.OptionsFlow):
 
     async def async_step_init(self, user_input: Optional[Dict[str, Any]] = None) -> FlowResult:
         """Manage the options for the integration."""
-        return self.async_show_form(step_id="init")
+        errors: Dict[str, str] = {}
 
+        if user_input is not None:
+            # If the user has provided new data, update the config entry
+            api_token = user_input.get("api_token")
 
-class ConfigFlowError(exceptions.HomeAssistantError):
-    """Base class for config flow errors."""
+            # Revalidate the API token to ensure it's correct
+            client = EpluconApi(api_token, aiohttp_client.async_get_clientsession(self.hass))
+
+            try:
+                devices = await client.get_devices()
+
+                _LOGGER.info(f"Devices found: {devices}")
+
+                if len(devices) > 0:
+                    # Update the configuration entry with the new API token and devices
+                    self.hass.config_entries.async_update_entry(
+                        self.config_entry,
+                        data={
+                            "api_token": api_token,
+                            "devices": devices
+                        }
+                    )
+                    return self.async_create_entry(title="", data={})
+
+                errors["base"] = "no-devices"
+
+            except ApiAuthError:
+                # Handle authentication error
+                _LOGGER.info("Authentication failed with the provided API token")
+                errors["base"] = "auth"
+
+            except ApiError:
+                # Handle general API error
+                _LOGGER.info("Failed to fetch devices from Eplucon API")
+                errors["base"] = "api"
+
+            except Exception as e:
+                # Handle any other unexpected exceptions
+                _LOGGER.exception("Unexpected exception: %s", e)
+                errors["base"] = "unknown"
+
+        # Show the options form with the current API token as the default value
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema({
+                vol.Required("api_token", default=self.config_entry.data.get("api_token")): str
+            }),
+            errors=errors
+        )
+
