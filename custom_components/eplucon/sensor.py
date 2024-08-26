@@ -11,7 +11,7 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.const import (
-    UnitOfTemperature,
+    UnitOfTemperature, REVOLUTIONS_PER_MINUTE, UnitOfPressure, UnitOfEnergy, UnitOfTime, UnitOfPower,
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -28,9 +28,8 @@ _LOGGER = logging.getLogger(__name__)
 @dataclass(kw_only=True)
 class EpluconSensorEntityDescription(SensorEntityDescription):
     """Describes an Eplucon sensor entity."""
-
     exists_fn: Callable[[Any], bool] = lambda _: True
-    value_fn: Callable[[Any], StateType]
+    value_fn: Callable[[Any], SensorEntityDescription]
 
 
 # Define the sensor types
@@ -38,16 +37,270 @@ SENSORS: tuple[EpluconSensorEntityDescription, ...] = (
     EpluconSensorEntityDescription(
         key="indoor_temperature",
         name="Indoor Temperature",
+        state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         device_class=SensorDeviceClass.TEMPERATURE,
-        state_class=SensorStateClass.MEASUREMENT,
         value_fn=lambda device: device.realtime_info.common.indoor_temperature,
         exists_fn=lambda device: device.realtime_info is not None,
     ),
+    EpluconSensorEntityDescription(
+        key="act_vent_rpm",
+        name="Act Vent RPM",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=REVOLUTIONS_PER_MINUTE,
+        value_fn=lambda device: device.realtime_info.common.act_vent_rpm,
+        exists_fn=lambda device: device.realtime_info is not None,
+    ),
+
+    EpluconSensorEntityDescription(
+        key="brine_circulation_pump",
+        name="Brine Circulation Pump",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=REVOLUTIONS_PER_MINUTE,
+        value_fn=lambda device: device.realtime_info.common.brine_circulation_pump,
+        exists_fn=lambda device: device.realtime_info is not None,
+    ),
+    EpluconSensorEntityDescription(
+        key="brine_in_temperature",
+        name="Brine In Temperature",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        value_fn=lambda device: device.realtime_info.common.brine_in_temperature,
+        exists_fn=lambda device: device.realtime_info is not None,
+    ),
+    EpluconSensorEntityDescription(
+        key="brine_out_temperature",
+        name="Brine Out Temperature",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        value_fn=lambda device: device.realtime_info.common.brine_out_temperature,
+        exists_fn=lambda device: device.realtime_info is not None,
+    ),
+    EpluconSensorEntityDescription(
+        key="brine_pressure",
+        name="Brine Pressure",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfPressure.BAR,
+        device_class=SensorDeviceClass.PRESSURE,
+        value_fn=lambda device: device.realtime_info.common.brine_pressure,
+        exists_fn=lambda device: device.realtime_info is not None,
+    ),
+    EpluconSensorEntityDescription(
+        key="compressor_speed",
+        name="Compressor Speed",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=REVOLUTIONS_PER_MINUTE,
+        value_fn=lambda device: device.realtime_info.common.compressor_speed,
+        exists_fn=lambda device: device.realtime_info is not None,
+    ),
+    EpluconSensorEntityDescription(
+        key="condensation_temperature",
+        name="Condensation Temperature",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        value_fn=lambda device: device.realtime_info.common.condensation_temperature,
+        exists_fn=lambda device: device.realtime_info is not None,
+    ),
+    EpluconSensorEntityDescription(
+        key="configured_indoor_temperature",
+        name="Configured Indoor Temperature",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        value_fn=lambda device: device.realtime_info.common.configured_indoor_temperature,
+        exists_fn=lambda device: device.realtime_info is not None,
+    ),
+
+    EpluconSensorEntityDescription(
+        key="cv_pressure",
+        name="CV Pressure",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfPressure.BAR,
+        device_class=SensorDeviceClass.PRESSURE,
+        value_fn=lambda device: device.realtime_info.common.cv_pressure,
+        exists_fn=lambda device: device.realtime_info is not None,
+    ),
+    EpluconSensorEntityDescription(
+        key="energy_delivered",
+        name="Energy Delivered",
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        device_class=SensorDeviceClass.ENERGY,
+        value_fn=lambda device: device.realtime_info.common.energy_delivered,
+        exists_fn=lambda device: device.realtime_info is not None,
+    ),
+    EpluconSensorEntityDescription(
+        key="energy_usage",
+        name="Energy Usage",
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        device_class=SensorDeviceClass.ENERGY,
+        value_fn=lambda device: device.realtime_info.common.energy_usage,
+        exists_fn=lambda device: device.realtime_info is not None,
+    ),
+    EpluconSensorEntityDescription(
+        key="evaporation_temperature",
+        name="Evaporation Temperature",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        value_fn=lambda device: device.realtime_info.common.evaporation_temperature,
+        exists_fn=lambda device: device.realtime_info is not None,
+    ),
+    EpluconSensorEntityDescription(
+        key="export_energy",
+        name="Export Energy",
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        device_class=SensorDeviceClass.ENERGY,
+        value_fn=lambda device: device.realtime_info.common.export_energy,
+        exists_fn=lambda device: device.realtime_info is not None,
+    ),
+    EpluconSensorEntityDescription(
+        key="heating_in_temperature",
+        name="Heating In Temperature",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        value_fn=lambda device: device.realtime_info.common.heating_in_temperature,
+        exists_fn=lambda device: device.realtime_info is not None,
+    ),
+
+    EpluconSensorEntityDescription(
+        key="heating_out_temperature",
+        name="Heating Out Temperature",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        value_fn=lambda device: device.realtime_info.common.heating_out_temperature,
+        exists_fn=lambda device: device.realtime_info is not None,
+    ),
+    EpluconSensorEntityDescription(
+        key="import_energy",
+        name="Import Energy",
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        device_class=SensorDeviceClass.ENERGY,
+        value_fn=lambda device: device.realtime_info.common.import_energy,
+        exists_fn=lambda device: device.realtime_info is not None,
+    ),
+    EpluconSensorEntityDescription(
+        key="inverter_temperature",
+        name="Inverter Temperature",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        value_fn=lambda device: device.realtime_info.common.inverter_temperature,
+        exists_fn=lambda device: device.realtime_info is not None,
+    ),
+
+    EpluconSensorEntityDescription(
+        key="operating_hours",
+        name="Operating Hours",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTime.HOURS,
+        device_class=SensorDeviceClass.DURATION,
+        value_fn=lambda device: device.realtime_info.common.operating_hours,
+        exists_fn=lambda device: device.realtime_info is not None,
+    ),
+
+    EpluconSensorEntityDescription(
+        key="outdoor_temperature",
+        name="Outdoor Temperature",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        value_fn=lambda device: device.realtime_info.common.outdoor_temperature,
+        exists_fn=lambda device: device.realtime_info is not None,
+    ),
+    EpluconSensorEntityDescription(
+        key="overheating",
+        name="Overheating",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        value_fn=lambda device: device.realtime_info.common.overheating,
+        exists_fn=lambda device: device.realtime_info is not None,
+    ),
+
+    EpluconSensorEntityDescription(
+        key="press_gas_pressure",
+        name="Press Gas Pressure",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfPressure.BAR,
+        device_class=SensorDeviceClass.PRESSURE,
+        value_fn=lambda device: device.realtime_info.common.press_gas_pressure,
+        exists_fn=lambda device: device.realtime_info is not None,
+    ),
+    EpluconSensorEntityDescription(
+        key="press_gas_temperature",
+        name="Press Gas Temperature",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        value_fn=lambda device: device.realtime_info.common.press_gas_temperature,
+        exists_fn=lambda device: device.realtime_info is not None,
+    ),
+    EpluconSensorEntityDescription(
+        key="production_circulation_pump",
+        name="Production Circulation Pump",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=REVOLUTIONS_PER_MINUTE,
+        value_fn=lambda device: device.realtime_info.common.production_circulation_pump,
+        exists_fn=lambda device: device.realtime_info is not None,
+    ),
+    EpluconSensorEntityDescription(
+        key="suction_gas_pressure",
+        name="Suction Gas Pressure",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfPressure.BAR,
+        device_class=SensorDeviceClass.PRESSURE,
+        value_fn=lambda device: device.realtime_info.common.suction_gas_pressure,
+        exists_fn=lambda device: device.realtime_info is not None,
+    ),
+    EpluconSensorEntityDescription(
+        key="suction_gas_temperature",
+        name="Suction Gas Temperature",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        value_fn=lambda device: device.realtime_info.common.suction_gas_temperature,
+        exists_fn=lambda device: device.realtime_info is not None,
+    ),
+    EpluconSensorEntityDescription(
+        key="total_active_power",
+        name="Total Active Power",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfPower.WATT,
+        device_class=SensorDeviceClass.POWER,
+        value_fn=lambda device: device.realtime_info.common.total_active_power,
+        exists_fn=lambda device: device.realtime_info is not None,
+    ),
+
+    EpluconSensorEntityDescription(
+        key="ww_temperature",
+        name="WW Temperature",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        value_fn=lambda device: device.realtime_info.common.ww_temperature,
+        exists_fn=lambda device: device.realtime_info is not None,
+    ),
+    EpluconSensorEntityDescription(
+        key="ww_temperature_configured",
+        name="WW Temperature Configured",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        value_fn=lambda device: device.realtime_info.common.ww_temperature_configured,
+        exists_fn=lambda device: device.realtime_info is not None,
+    )
 )
 
 
-async def async_setup_entry(
+def async_setup_entry(
         hass: HomeAssistant,
         entry: ConfigEntry,
         async_add_entities: AddEntitiesCallback,
