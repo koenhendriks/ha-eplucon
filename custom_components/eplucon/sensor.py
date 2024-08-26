@@ -78,8 +78,23 @@ class EpluconSensorEntity(CoordinatorEntity, SensorEntity):
         self.entity_description = entity_description
         self._attr_name = f"{device.name} {entity_description.name}"
         self._attr_unique_id = f"{device.id}_{entity_description.key}"
+        self._update_device_data()
+
+    def _update_device_data(self):
+        """Update the internal data from the coordinator."""
+        # Assuming devices are updated in the coordinator data
+        for updated_device in self.coordinator.data:
+            if updated_device.id == self.device.id:
+                _LOGGER.debug(f"Update from coordinator in sensor. {updated_device}")
+                self.device = updated_device
 
     @property
     def native_value(self) -> StateType:
         """Return the state of the sensor."""
         return self.entity_description.value_fn(self.device)
+
+    def _handle_coordinator_update(self) -> None:
+        """Handle updated data from the coordinator."""
+        _LOGGER.debug("Getting update from coordinator in sensor.")
+        self._update_device_data()
+        super()._handle_coordinator_update()
