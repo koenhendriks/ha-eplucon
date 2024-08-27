@@ -300,13 +300,17 @@ SENSORS: tuple[EpluconSensorEntityDescription, ...] = (
 )
 
 
-def async_setup_entry(
+async def async_setup_entry(
         hass: HomeAssistant,
         entry: ConfigEntry,
         async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up Eplucon sensor based on a config entry."""
     coordinator = hass.data[DOMAIN][entry.entry_id]
+
+    # Ensure the coordinator has refreshed its data
+    await coordinator.async_config_entry_first_refresh()
+
     devices = coordinator.data
 
     async_add_entities(
@@ -327,6 +331,7 @@ class EpluconSensorEntity(CoordinatorEntity, SensorEntity):
     ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator)
+        _LOGGER.debug(f"device received in sensor INIT {device} ")
         self.device = device
         self.entity_description = entity_description
         self._attr_name = f"{device.name} {entity_description.name}"
@@ -338,7 +343,6 @@ class EpluconSensorEntity(CoordinatorEntity, SensorEntity):
         # Assuming devices are updated in the coordinator data
         for updated_device in self.coordinator.data:
             if updated_device.id == self.device.id:
-                _LOGGER.debug(f"Update from coordinator in sensor. {updated_device}")
                 self.device = updated_device
 
     @property

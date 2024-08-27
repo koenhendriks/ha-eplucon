@@ -23,18 +23,23 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     async def async_update_data() -> list[DeviceDTO]:
         """Fetch Eplucon data from API endpoint."""
         try:
-            ##
-            # TODO remove this extra API call and replace with getting DeviceDTO from config entry
-            # can be retrieved using entry.data["devices"] but will be a dict and not have direct objects to DTO
-            # should be converted first.
-            #
-            # When given from HASS config flow the entry.data["devices"] is type list[DeviceDTO] but on boot
-            # this is a dict, not sure why and if this is intended.
-            ##
-            devices = await client.get_devices()
+            devices = entry.data["devices"]
 
             # For each device, fetch the real-time info and combine it with the device data
             for device in devices:
+                ##
+                # When retrieving given devices from HASS config flow the entry.data["devices"]
+                # is type list[DeviceDTO] but on boot this is a list[dict], not sure why and if this is intended,
+                # but we will ensure we can parse the correct format here.
+                ##
+                if not isinstance(device, DeviceDTO):
+                    device = DeviceDTO(
+                        device.get('id'),
+                        device.get('account_module_index'),
+                        device.get('name'),
+                        device.get('type'),
+                    )
+
                 device_id = device.id
                 realtime_info = await client.get_realtime_info(device_id)
                 device.realtime_info = realtime_info
