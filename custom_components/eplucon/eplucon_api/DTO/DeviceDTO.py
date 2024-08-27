@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import Optional
 from . import RealtimeInfoDTO
 
+
 @dataclass
 class DeviceDTO:
     id: int
@@ -9,4 +10,3 @@ class DeviceDTO:
     name: str
     type: str
     realtime_info: Optional[RealtimeInfoDTO] = None
-
