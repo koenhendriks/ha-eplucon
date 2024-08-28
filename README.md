@@ -1,7 +1,5 @@
 # Home Assistant Eplucon Integration
 
-> Currently in Alpha and updates might come with breaking changes 
-
 This custom integration allows you to integrate your Eplucon devices into Home Assistant, providing access to real-time data and sensor values.
 
 ## Features
