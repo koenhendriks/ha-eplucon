@@ -38,6 +38,7 @@ class EpluconConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 _LOGGER.info(f"got {devices}")
 
                 if len(devices) > 0:
+
                     return self.async_create_entry(title="Eplucon", data={"devices": devices, "api_token": api_token})
 
                 errors["base"] = "no-devices"

@@ -3,6 +3,8 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 import logging
+from dacite import from_dict
+
 
 from homeassistant.components.sensor import (
     SensorEntity,
@@ -21,6 +23,7 @@ from homeassistant.helpers.typing import StateType
 from typing import Any
 
 from .const import DOMAIN
+from .eplucon_api.DTO.DeviceDTO import DeviceDTO
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -224,7 +227,6 @@ SENSORS: tuple[EpluconSensorEntityDescription, ...] = (
         value_fn=lambda device: device.realtime_info.common.overheating,
         exists_fn=lambda device: device.realtime_info is not None,
     ),
-
     EpluconSensorEntityDescription(
         key="press_gas_pressure",
         name="Press Gas Pressure",
@@ -313,9 +315,18 @@ async def async_setup_entry(
 
     devices = coordinator.data
 
+    list_device_dto: list[DeviceDTO] = list()
+
+    for device in devices:
+        if isinstance(device, dict):
+            device = from_dict(data_class=DeviceDTO, data=device)
+            list_device_dto.append(device)
+        else:
+            list_device_dto.append(device)
+
     async_add_entities(
         EpluconSensorEntity(coordinator, device, description)
-        for device in devices
+        for device in list_device_dto
         for description in SENSORS
         if description.exists_fn(device)
     )
@@ -331,7 +342,6 @@ class EpluconSensorEntity(CoordinatorEntity, SensorEntity):
     ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator)
-        _LOGGER.debug(f"device received in sensor INIT {device} ")
         self.device = device
         self.entity_description = entity_description
         self._attr_name = f"{device.name} {entity_description.name}"
@@ -342,6 +352,8 @@ class EpluconSensorEntity(CoordinatorEntity, SensorEntity):
         """Update the internal data from the coordinator."""
         # Assuming devices are updated in the coordinator data
         for updated_device in self.coordinator.data:
+            if isinstance(updated_device, dict):
+                updated_device = from_dict(data_class=DeviceDTO, data=updated_device)
             if updated_device.id == self.device.id:
                 self.device = updated_device
 

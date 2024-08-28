@@ -6,6 +6,8 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from .eplucon_api.eplucon_client import EpluconApi, ApiError, DeviceDTO
 from .const import DOMAIN, PLATFORMS
+from dacite import from_dict
+
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -32,13 +34,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 # is type list[DeviceDTO] but on boot this is a list[dict], not sure why and if this is intended,
                 # but we will ensure we can parse the correct format here.
                 ##
-                if not isinstance(device, DeviceDTO):
-                    device = DeviceDTO(
-                        device.get('id'),
-                        device.get('account_module_index'),
-                        device.get('name'),
-                        device.get('type'),
-                    )
+                if isinstance(device, dict):
+                    device = from_dict(data_class=DeviceDTO, data=device)
 
                 device_id = device.id
                 realtime_info = await client.get_realtime_info(device_id)
