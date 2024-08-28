@@ -6,7 +6,7 @@
   "domain": "eplucon",
   "iot_class": "calculated",
   "name": "Eplucon",
-  "requirements": ["aiohttp"],
+  "requirements": ["aiohttp", "dacite"],
   "version": "1.0.0",
   "single_config_entry": true
 }
