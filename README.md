@@ -56,6 +56,10 @@ This integration provides all available sensors that can be retrieved from the [
 
 These sensors are automatically created based on the real-time information available from your Eplucon device.
 
+### Screenshot
+
+![Eplucon sensors added to Home assistant](https://github.com/user-attachments/assets/9183f9fa-da81-465a-96a1-e6ff9aae3869)
+
 ## Troubleshooting
 
 ### Common Issues
