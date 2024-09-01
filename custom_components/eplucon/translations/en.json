@@ -5,9 +5,6 @@
             "user": {
                 "title": "Connect to Eplucon",
                 "description": "Please enter your API token to connect to Eplucon (https://portaal.eplucon.nl/account/api_tokens).",
-                "data": {
-                    "api_token": "API Token"
-                }
             }
         },
         "error": {
