@@ -4,6 +4,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers import device_registry
 from .eplucon_api.eplucon_client import EpluconApi, ApiError, DeviceDTO
 from .const import DOMAIN, PLATFORMS, EPLUCON_PORTAL_URL, MANUFACTURER
 from dacite import from_dict
@@ -17,40 +18,33 @@ UPDATE_INTERVAL = timedelta(seconds=30)
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Eplucon from a config entry."""
     api_token = entry.data["api_token"]
+    devices = entry.data["devices"]
 
     session = async_get_clientsession(hass)
     client = EpluconApi(api_token, session)
 
+    await register_devices(devices, entry, hass)
+
     async def async_update_data() -> list[DeviceDTO]:
         """Fetch Eplucon data from API endpoint."""
         try:
-            devices = entry.data["devices"]
+            entry_devices = entry.data["devices"]
 
             # For each device, fetch the real-time info and combine it with the device data
-            for device in devices:
-                device = await device_dict_to_dto(device)
-                await get_realtime_info_for_device(device)
+            for entry_device in entry_devices:
+                entry_device = await device_dict_to_dto(entry_device)
+                realtime_info = await client.get_realtime_info(entry_device.id)
+                entry_device.realtime_info = realtime_info
 
-            return devices
+            return entry_devices
 
         except ApiError as err:
             _LOGGER.error(f"Error fetching data from Eplucon API: {err}")
             raise err
 
-    async def device_dict_to_dto(device):
-        ##
-        # When retrieving given devices from HASS config flow the entry.data["devices"]
-        # is type list[DeviceDTO] but on boot this is a list[dict], not sure why and if this is intended,
-        # but we will ensure we can parse the correct format here.
-        ##
-        if isinstance(device, dict):
-            device = from_dict(data_class=DeviceDTO, data=device)
-        return device
-
-    async def get_realtime_info_for_device(device: DeviceDTO):
-        device_id = device.id
-        realtime_info = await client.get_realtime_info(device_id)
-        device.realtime_info = realtime_info
+        except Exception as err:
+            _LOGGER.error(f"Something went wrong when updating Eplucon device from API: {err}")
+            raise err
 
     # Set up the coordinator to manage fetching data from the API
     coordinator = DataUpdateCoordinator(
@@ -71,6 +65,33 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     return True
+
+
+async def register_devices(devices, entry, hass):
+    hass_device_registry = device_registry.async_get(hass)
+    for device in devices:
+        device = await device_dict_to_dto(device)
+
+        hass_device_registry.async_get_or_create(
+            configuration_url=EPLUCON_PORTAL_URL,
+            config_entry_id=entry.entry_id,
+            identifiers={(DOMAIN, device.account_module_index)},
+            manufacturer=MANUFACTURER,
+            suggested_area="Utility Room",
+            name=device.name,
+            model=device.type,
+        )
+
+
+async def device_dict_to_dto(device_dict: DeviceDTO|dict) -> DeviceDTO:
+    """
+        When retrieving given devices from HASS config flow the entry.data["devices"]
+        is type list[DeviceDTO] but on boot this is a list[dict], not sure why and if this is intended,
+        but this method will ensure we can parse the correct format here.
+    """
+    if isinstance(device_dict, dict):
+        device_dict = from_dict(data_class=DeviceDTO, data=device_dict)
+    return device_dict
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
