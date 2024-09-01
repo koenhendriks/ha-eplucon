@@ -6,8 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.1.0](https://github.com/koenhendriks/ha-ecuplon/releases/1.1.0) - 2024-09-01
 ### Added
-- Homeassistant device description to map entities per device in the integration.
+- Homeassistant device info to map entities per device in the integration.
 - Debugging logs for API calls to be able to trace received data.
 
 ### Removed
