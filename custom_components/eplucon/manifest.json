@@ -3,10 +3,11 @@
   "config_flow": true,
   "dependencies": ["sensor"],
   "documentation": "https://github.com/koenhendriks/ha-eplucon",
+  "issue_tracker": "https://github.com/koenhendriks/ha-eplucon/issues",
   "domain": "eplucon",
   "iot_class": "calculated",
   "name": "Eplucon",
   "requirements": ["aiohttp", "dacite"],
-  "version": "1.0.0",
+  "version": "1.1.0",
   "single_config_entry": true
 }
