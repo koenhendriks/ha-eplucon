@@ -5,14 +5,13 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from .eplucon_api.eplucon_client import EpluconApi, ApiError, DeviceDTO
-from .const import DOMAIN, PLATFORMS
+from .const import DOMAIN, PLATFORMS, EPLUCON_PORTAL_URL, MANUFACTURER
 from dacite import from_dict
-
 
 _LOGGER = logging.getLogger(__name__)
 
 # Time between data updates
-UPDATE_INTERVAL = timedelta(seconds=5)
+UPDATE_INTERVAL = timedelta(seconds=30)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -29,23 +28,29 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
             # For each device, fetch the real-time info and combine it with the device data
             for device in devices:
-                ##
-                # When retrieving given devices from HASS config flow the entry.data["devices"]
-                # is type list[DeviceDTO] but on boot this is a list[dict], not sure why and if this is intended,
-                # but we will ensure we can parse the correct format here.
-                ##
-                if isinstance(device, dict):
-                    device = from_dict(data_class=DeviceDTO, data=device)
-
-                device_id = device.id
-                realtime_info = await client.get_realtime_info(device_id)
-                device.realtime_info = realtime_info
+                device = await device_dict_to_dto(device)
+                await get_realtime_info_for_device(device)
 
             return devices
 
         except ApiError as err:
             _LOGGER.error(f"Error fetching data from Eplucon API: {err}")
             raise err
+
+    async def device_dict_to_dto(device):
+        ##
+        # When retrieving given devices from HASS config flow the entry.data["devices"]
+        # is type list[DeviceDTO] but on boot this is a list[dict], not sure why and if this is intended,
+        # but we will ensure we can parse the correct format here.
+        ##
+        if isinstance(device, dict):
+            device = from_dict(data_class=DeviceDTO, data=device)
+        return device
+
+    async def get_realtime_info_for_device(device: DeviceDTO):
+        device_id = device.id
+        realtime_info = await client.get_realtime_info(device_id)
+        device.realtime_info = realtime_info
 
     # Set up the coordinator to manage fetching data from the API
     coordinator = DataUpdateCoordinator(
