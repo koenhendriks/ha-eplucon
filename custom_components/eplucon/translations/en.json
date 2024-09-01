@@ -18,11 +18,6 @@
         },
         "abort": {
             "single_instance_allowed": "Only a single instance of Eplucon is allowed."
-        },
-        "user": {
-            "data_description": {
-                "api_token": "Can be created at https://portaal.eplucon.nl/account/api_tokens"
-            }
         }
     },
     "options": {
