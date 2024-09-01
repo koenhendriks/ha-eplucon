@@ -22,7 +22,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.helpers.typing import StateType
 from typing import Any
 
-from .const import DOMAIN
+from .const import DOMAIN, MANUFACTURER
 from .eplucon_api.DTO.DeviceDTO import DeviceDTO
 
 _LOGGER = logging.getLogger(__name__)
@@ -338,15 +338,25 @@ class EpluconSensorEntity(CoordinatorEntity, SensorEntity):
     entity_description: EpluconSensorEntityDescription
 
     def __init__(
-            self, coordinator, device, entity_description: EpluconSensorEntityDescription
+            self, coordinator, device: DeviceDTO, entity_description: EpluconSensorEntityDescription
     ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator)
         self.device = device
         self.entity_description = entity_description
-        self._attr_name = f"{device.name} {entity_description.name}"
+        self._attr_name = f"{entity_description.name}"
         self._attr_unique_id = f"{device.id}_{entity_description.key}"
         self._update_device_data()
+
+    @property
+    def device_info(self) -> dict:
+        """Return information to link this entity with the correct device."""
+        return {
+            "manufacturer": MANUFACTURER,
+            "name": self._attr_name,
+            "model": self.device.type,
+            "identifiers":{(DOMAIN, self.device.account_module_index)},
+        }
 
     def _update_device_data(self):
         """Update the internal data from the coordinator."""
