@@ -59,6 +59,7 @@ class EpluconApi:
 
     @staticmethod
     def validate_response(response: Any) -> None:
+        _LOGGER.debug(f"Validating API response for {response}")
         if 'auth' not in response:
             raise ApiError('Error from Eplucon API, expecting auth key in response.')
 
