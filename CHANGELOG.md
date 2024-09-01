@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Added
 - Homeassistant device info to map entities per device in the integration.
 - Debugging logs for API calls to be able to trace received data.
+- CI using GitHub Actions including HACS validation.
 
 ### Removed
 - Device name from default entity name
