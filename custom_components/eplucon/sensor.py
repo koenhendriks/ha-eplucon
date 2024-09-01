@@ -5,7 +5,6 @@ from dataclasses import dataclass
 import logging
 from dacite import from_dict
 
-
 from homeassistant.components.sensor import (
     SensorEntity,
     SensorEntityDescription,
@@ -353,9 +352,7 @@ class EpluconSensorEntity(CoordinatorEntity, SensorEntity):
         """Return information to link this entity with the correct device."""
         return {
             "manufacturer": MANUFACTURER,
-            "name": self._attr_name,
-            "model": self.device.type,
-            "identifiers":{(DOMAIN, self.device.account_module_index)},
+            "identifiers": {(DOMAIN, self.device.account_module_index)},
         }
 
     def _update_device_data(self):
