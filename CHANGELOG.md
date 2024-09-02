@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
-## [1.1.0](https://github.com/koenhendriks/ha-ecuplon/releases/1.1.0) - 2024-09-01
+## [1.1.0](https://github.com/koenhendriks/ha-ecuplon/releases/1.1.0) - 2024-09-02
 ### Added
 - Homeassistant device info to map entities per device in the integration.
 - Debugging logs for API calls to be able to trace received data.
@@ -16,9 +16,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   - Direct Outlet (DG1)
   - Mixture Outlet (SG2)
   - Mixture Outlet (SG3)
-  - Mixture Outlet (SG4)
+  - Mixture Outlet (SG4)  
+  
 
-
+### Changed
+- Checking for existing value of entity is now stricter on entity value instead of global device `realtime_info`
 
 ### Removed
 - Device name from default entity name
