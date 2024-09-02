@@ -11,6 +11,7 @@ from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorStateClass,
 )
+from homeassistant.components.binary_sensor import BinarySensorDeviceClass
 from homeassistant.const import (
     UnitOfTemperature, REVOLUTIONS_PER_MINUTE, UnitOfPressure, UnitOfEnergy, UnitOfTime, UnitOfPower,
 )
@@ -279,7 +280,6 @@ SENSORS: tuple[EpluconSensorEntityDescription, ...] = (
         value_fn=lambda device: device.realtime_info.common.total_active_power,
         exists_fn=lambda device: device.realtime_info is not None,
     ),
-
     EpluconSensorEntityDescription(
         key="ww_temperature",
         name="WW Temperature",
@@ -297,7 +297,39 @@ SENSORS: tuple[EpluconSensorEntityDescription, ...] = (
         device_class=SensorDeviceClass.TEMPERATURE,
         value_fn=lambda device: device.realtime_info.common.ww_temperature_configured,
         exists_fn=lambda device: device.realtime_info is not None,
-    )
+    ),
+
+    EpluconSensorEntityDescription(
+        key="active_requests_ww",
+        name="Active WW request",
+        device_class=BinarySensorDeviceClass.HEAT,
+        value_fn=lambda device: "ON" if device.realtime_info.common.active_requests_ww in ["ON", "1"] else "OFF",
+        exists_fn=lambda device: device.realtime_info is not None,
+    ),
+    EpluconSensorEntityDescription(
+        key="dg1",
+        name="Direct Outlet (DG1)",
+        value_fn=lambda device: "ON" if device.realtime_info.common.dg1 in ["ON", "1"] else "OFF",
+        exists_fn=lambda device: device.realtime_info is not None,
+    ),
+    EpluconSensorEntityDescription(
+        key="sg2",
+        name="Mixture Outlet (SG2)",
+        value_fn=lambda device: "ON" if device.realtime_info.common.sg2 in ["ON", "1"] else "OFF",
+        exists_fn=lambda device: device.realtime_info is not None,
+    ),
+    EpluconSensorEntityDescription(
+        key="sg3",
+        name="Mixture Outlet (SG3)",
+        value_fn=lambda device: "ON" if device.realtime_info.common.sg3 in ["ON", "1"] else "OFF",
+        exists_fn=lambda device: device.realtime_info is not None,
+    ),
+    EpluconSensorEntityDescription(
+        key="sg4",
+        name="Mixture Outlet (SG4)",
+        value_fn=lambda device: "ON" if device.realtime_info.common.sg4 in ["ON", "1"] else "OFF",
+        exists_fn=lambda device: device.realtime_info is not None,
+    ),
 )
 
 
