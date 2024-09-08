@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.2.0](https://github.com/koenhendriks/ha-ecuplon/releases/1.1.0) - 2024-09-08
+
+
+### Added
+- All missing sensors from the API output:
+  - Operation Mode
+  - Seasonal Performance Factor (SPF)
+  - Position Expansion Ventil
+  - Number of Starts
+  - Heating Mode
+  - Warm Water
+  - Alarm Active
+  - Current Heating Pump State
+  - Current Heating State
+
 ## [1.1.0](https://github.com/koenhendriks/ha-ecuplon/releases/1.1.0) - 2024-09-02
 ### Added
 - Homeassistant device info to map entities per device in the integration.
