@@ -6,7 +6,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers import device_registry
 from .eplucon_api.eplucon_client import EpluconApi, ApiError, DeviceDTO
-from .const import DOMAIN, PLATFORMS, EPLUCON_PORTAL_URL, MANUFACTURER
+from .const import DOMAIN, PLATFORMS, EPLUCON_PORTAL_URL, MANUFACTURER, SUPPORTED_TYPES
 from dacite import from_dict
 
 _LOGGER = logging.getLogger(__name__)
@@ -29,10 +29,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         """Fetch Eplucon data from API endpoint."""
         try:
             entry_devices = entry.data["devices"]
+            _LOGGER.debug(f"Fetching data from Eplucon API for {len(entry_devices)} devices")
 
             # For each device, fetch the real-time info and combine it with the device data
             for entry_device in entry_devices:
+                _LOGGER.debug(f"for device {entry_devices}")
                 entry_device = await device_dict_to_dto(entry_device)
+
+                _LOGGER.debug(f"completed dict for device {entry_devices}")
+
+                # Skip unsupported devices
+                if entry_device.type not in SUPPORTED_TYPES:
+                    _LOGGER.debug(f"Device {entry_device.name} with type {entry_device.type} is not supported yet. Skipping...")
+                    entry_devices.remove(entry_device)
+                    continue
+
                 realtime_info = await client.get_realtime_info(entry_device.id)
                 entry_device.realtime_info = realtime_info
 
