@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
-## [1.2.0](https://github.com/koenhendriks/ha-ecuplon/releases/1.1.0) - 2024-09-08
+## [1.2.0](https://github.com/koenhendriks/ha-ecuplon/releases/1.2.0) - 2024-09-08
 
 
 ### Added
