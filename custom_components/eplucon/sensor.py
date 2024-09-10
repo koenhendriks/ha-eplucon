@@ -402,6 +402,6 @@ class EpluconSensorEntity(CoordinatorEntity, SensorEntity):
 
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
-        _LOGGER.debug("Getting update from coordinator in sensor.")
+        _LOGGER.debug(f"Getting update from coordinator in sensor {self.name}.")
         self._update_device_data()
         super()._handle_coordinator_update()
