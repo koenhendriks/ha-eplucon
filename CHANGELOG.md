@@ -6,7 +6,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
-## [1.1.0](https://github.com/koenhendriks/ha-ecuplon/releases/1.1.0) - 2024-09-02
+## [1.2.1](https://github.com/koenhendriks/ha-eplucon/releases/1.2.1) - 2024-09-08
+
+### Added
+- Setup to only allow supported devices with a certain product type (`heat_pump` for now).
+- Mock client to be used with testing specific API responses.
+
+### Fixed
+- Fixed [#1](https://github.com/koenhendriks/ha-eplucon/issues/1) by checking for supported devices.
+
+## [1.2.0](https://github.com/koenhendriks/ha-eplucon/releases/1.2.0) - 2024-09-08
+
+
+### Added
+- All missing sensors from the API output:
+  - Operation Mode
+  - Seasonal Performance Factor (SPF)
+  - Position Expansion Ventil
+  - Number of Starts
+  - Heating Mode
+  - Warm Water
+  - Alarm Active
+  - Current Heating Pump State
+  - Current Heating State
+
+## [1.1.0](https://github.com/koenhendriks/ha-eplucon/releases/1.1.0) - 2024-09-02
 ### Added
 - Homeassistant device info to map entities per device in the integration.
 - Debugging logs for API calls to be able to trace received data.
@@ -25,7 +49,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Removed
 - Device name from default entity name
 
-## [1.0.0](https://github.com/koenhendriks/ha-ecuplon/releases/1.0.0) - 2024-08-28
+## [1.0.0](https://github.com/koenhendriks/ha-eplucon/releases/1.0.0) - 2024-08-28
 ### Added
 - Initial release of the Eplucon Home Assistant Integration.
 - Support for retrieving real-time device information from the Eplucon API.

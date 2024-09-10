@@ -1,11 +1,11 @@
 import logging
 import voluptuous as vol
 from typing import Any, Dict, Optional
-from homeassistant import config_entries, exceptions
+from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.helpers import aiohttp_client
 from homeassistant.data_entry_flow import FlowResult
-from .const import DOMAIN
+from .const import DOMAIN, SUPPORTED_TYPES
 from .eplucon_api.eplucon_client import EpluconApi, ApiAuthError, ApiError
 
 _LOGGER = logging.getLogger(__name__)
@@ -35,10 +35,15 @@ class EpluconConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             try:
                 devices = await client.get_devices()
 
-                _LOGGER.info(f"got {devices}")
+                _LOGGER.debug(f"Received the following devices from API: {devices}")
+
+                for device in devices:
+                    if device.type not in SUPPORTED_TYPES:
+                        _LOGGER.warning(
+                            f"Device {device.name} with type {device.type} is not supported yet. Skipping...")
+                        devices.remove(device)
 
                 if len(devices) > 0:
-
                     return self.async_create_entry(title="Eplucon", data={"devices": devices, "api_token": api_token})
 
                 errors["base"] = "no-devices"
@@ -94,6 +99,13 @@ class EpluconOptionsFlowHandler(config_entries.OptionsFlow):
                 devices = await client.get_devices()
 
                 _LOGGER.info(f"Devices found: {devices}")
+
+                # Skip unsupported devices
+                for device in devices:
+                    if device.type not in SUPPORTED_TYPES:
+                        _LOGGER.debug(
+                            f"Device {device.name} with type {device.type} is not supported yet. Skipping...")
+                        devices.remove(device)
 
                 if len(devices) > 0:
                     # Update the configuration entry with the new API token and devices
