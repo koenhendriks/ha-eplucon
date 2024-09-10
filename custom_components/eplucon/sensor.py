@@ -406,9 +406,7 @@ async def async_setup_entry(
     for device in devices:
         if isinstance(device, dict):
             device = from_dict(data_class=DeviceDTO, data=device)
-            list_device_dto.append(device)
-        else:
-            list_device_dto.append(device)
+        list_device_dto.append(device)
 
     async_add_entities(
         EpluconSensorEntity(coordinator, device, description)
