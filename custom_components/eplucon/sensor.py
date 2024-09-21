@@ -13,7 +13,7 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.components.binary_sensor import BinarySensorDeviceClass
 from homeassistant.const import (
-    UnitOfTemperature, REVOLUTIONS_PER_MINUTE, UnitOfPressure, UnitOfEnergy, UnitOfTime, UnitOfPower,
+    UnitOfTemperature, REVOLUTIONS_PER_MINUTE, UnitOfPressure, UnitOfEnergy, UnitOfTime, UnitOfPower, PERCENTAGE,
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -59,7 +59,7 @@ SENSORS: tuple[EpluconSensorEntityDescription, ...] = (
         key="brine_circulation_pump",
         name="Brine Circulation Pump",
         state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=REVOLUTIONS_PER_MINUTE,
+        native_unit_of_measurement=PERCENTAGE,
         value_fn=lambda device: device.realtime_info.common.brine_circulation_pump,
         exists_fn=lambda device: device.realtime_info is not None and device.realtime_info.common is not None and device.realtime_info.common.brine_circulation_pump is not None,
     ),
@@ -249,7 +249,7 @@ SENSORS: tuple[EpluconSensorEntityDescription, ...] = (
         key="production_circulation_pump",
         name="Production Circulation Pump",
         state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=REVOLUTIONS_PER_MINUTE,
+        native_unit_of_measurement=PERCENTAGE,
         value_fn=lambda device: device.realtime_info.common.production_circulation_pump,
         exists_fn=lambda device: device.realtime_info is not None and device.realtime_info.common is not None and device.realtime_info.common.production_circulation_pump is not None,
     ),
