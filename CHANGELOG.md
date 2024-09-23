@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.2.2](https://github.com/koenhendriks/ha-eplucon/releases/1.2.2) - 2024-09-23
+
+### Fixed
+- Fixed [#4](https://github.com/koenhendriks/ha-eplucon/issues/4), Brine and Production Circulation Pump now have percentage as unit.
+
+### Updated
+- Updated `requirements.txt` to version `dacite` up until next major release ([#2](https://github.com/koenhendriks/ha-eplucon/issues/2)). 
+
 ## [1.2.1](https://github.com/koenhendriks/ha-eplucon/releases/1.2.1) - 2024-09-08
 
 ### Added
