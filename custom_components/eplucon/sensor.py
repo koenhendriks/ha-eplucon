@@ -334,18 +334,22 @@ exists_fn=lambda device: device.realtime_info is not None and device.realtime_in
     EpluconSensorEntityDescription(
         key="spf",
         name="Seasonal Performance Factor (SPF)",
+        state_class=SensorStateClass.MEASUREMENT,
         value_fn=lambda device: device.realtime_info.common.spf,
         exists_fn=lambda device: device.realtime_info is not None and device.realtime_info.common is not None and device.realtime_info.common.spf is not None,
     ),
     EpluconSensorEntityDescription(
         key="position_expansion_ventil",
         name="Position Expansion Ventil",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=PERCENTAGE,
         value_fn=lambda device: device.realtime_info.common.position_expansion_ventil,
         exists_fn=lambda device: device.realtime_info is not None and device.realtime_info.common is not None and device.realtime_info.common.position_expansion_ventil is not None,
     ),
     EpluconSensorEntityDescription(
         key="number_of_starts",
         name="Number of Starts",
+        state_class=SensorStateClass.TOTAL_INCREASING,
         value_fn=lambda device: device.realtime_info.common.number_of_starts,
         exists_fn=lambda device: device.realtime_info is not None and device.realtime_info.common is not None and device.realtime_info.common.number_of_starts is not None,
     ),
@@ -384,6 +388,7 @@ exists_fn=lambda device: device.realtime_info is not None and device.realtime_in
     EpluconSensorEntityDescription(
         key="operation_mode",
         name="Operation Mode",
+        device_class=SensorDeviceClass.ENUM,
         value_fn=lambda device: device.realtime_info.common.operation_mode,
         exists_fn=lambda device: device.realtime_info is not None and device.realtime_info.common is not None and device.realtime_info.common.operation_mode is not None,
     ),
