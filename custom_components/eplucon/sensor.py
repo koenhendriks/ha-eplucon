@@ -31,6 +31,8 @@ _LOGGER = logging.getLogger(__name__)
 @dataclass(kw_only=True)
 class EpluconSensorEntityDescription(SensorEntityDescription):
     """Describes an Eplucon sensor entity."""
+    key: str
+    name: str
     exists_fn: Callable[[Any], bool] = lambda _: True
     value_fn: Callable[[Any], SensorEntityDescription]
 
@@ -385,7 +387,37 @@ exists_fn=lambda device: device.realtime_info is not None and device.realtime_in
         value_fn=lambda device: device.realtime_info.common.operation_mode,
         exists_fn=lambda device: device.realtime_info is not None and device.realtime_info.common is not None and device.realtime_info.common.operation_mode is not None,
     ),
+    EpluconSensorEntityDescription(
+        key="operation_mode_text",
+        name="Operation Mode Text",
+        device_class=SensorDeviceClass.ENUM,
+        value_fn=lambda device: get_friendly_operation_mode_text(device),
+        exists_fn=lambda device: device.realtime_info is not None and device.realtime_info.common is not None and device.realtime_info.common.operation_mode is not None,
+    ),
 )
+
+def get_friendly_operation_mode_text(device: DeviceDTO) -> str:
+    # TODO: Consider adding localization options for the operation mode text, now hardcoded Dutch.
+    try:
+        operation_mode = int(device.realtime_info.common.operation_mode)
+    except TypeError:
+        _LOGGER.debug(f"Operation mode is not available for device {device.id}")
+        return "Unavailable"
+
+    match operation_mode:
+        case 1:
+            return "Koeling"
+        case 2:
+            return "Verwarming"
+        case 3:
+            return "Auto th-TOUCH"
+        case 4:
+            return "Auto Wp"
+        case 5:
+            return "Haard"
+        case _:
+            return "Unknown operation mode"
+
 
 
 async def async_setup_entry(
