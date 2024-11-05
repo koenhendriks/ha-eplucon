@@ -5,14 +5,18 @@
             "user": {
                 "title": "Connect to Eplucon",
                 "description": "Please enter your API token to connect to Eplucon (https://portaal.eplucon.nl/account/api_tokens).",
+                "data_description": {
+                    "api_endpoint": "Override the default API endpoint (optional)"
+                },
                 "data": {
-                    "api_token": "API Token"
+                    "api_token": "API Token",
+                    "api_endpoint": "API Endpoint"
                 }
             }
         },
         "error": {
-            "auth": "Authentication failed. Please check your API token.",
-            "api": "Failed to connect to the Eplucon API. Please try again or check the logs for more info.",
+            "auth": "Authentication failed. Please check your API token and/or API endpoint.",
+            "api": "Failed to connect to the Eplucon API. Please check the API endpoint and try again or check the logs for more info.",
             "unknown": "An unexpected error occurred. Please try again or check the logs for more info.",
             "no-devices": "No devices found. Ensure you're device is added to your Eplucon account"
         },
@@ -24,15 +28,19 @@
         "step": {
             "init": {
                 "title": "Eplucon Config options",
-                "description": "Current API token",
+                "description": "Current API token & endpoint",
+                "data_description": {
+                    "api_endpoint": "Override the default API endpoint (optional)"
+                },
                 "data": {
-                    "api_token": "API Token"
+                    "api_token": "API Token",
+                    "api_endpoint": "API Endpoint"
                 }
             }
         },
         "error": {
-            "auth": "Authentication failed. Please check your API token.",
-            "api": "Failed to connect to the Eplucon API. Please try again or check the logs for more info.",
+            "auth": "Authentication failed. Please check your API token and/or API endpoint.",
+            "api": "Failed to connect to the Eplucon API. Please check the API endpoint and try again or check the logs for more info.",
             "unknown": "An unexpected error occurred. Please try again or check the logs for more info.",
             "no-devices": "No devices found. Ensure you're device is added to your Eplucon account"
         }
