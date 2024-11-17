@@ -32,7 +32,7 @@ class EpluconConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             # Attempt to connect to the API using the provided API token & endpoint
             api_token: str = user_input["api_token"]
             api_endpoint: str = user_input['api_endpoint']
-            client = EpluconApi(api_token, api_endpoint, aiohttp_client.async_get_clientsession(self.hass))
+            client = EpluconApi(api_token, api_endpoint)
 
             try:
                 devices = await client.get_devices()
@@ -96,7 +96,7 @@ class EpluconOptionsFlowHandler(config_entries.OptionsFlow):
             api_endpoint = user_input.get("api_endpoint")
 
             # Revalidate the API token to ensure it's correct
-            client = EpluconApi(api_token, api_endpoint, aiohttp_client.async_get_clientsession(self.hass))
+            client = EpluconApi(api_token, api_endpoint)
 
             try:
                 devices = await client.get_devices()

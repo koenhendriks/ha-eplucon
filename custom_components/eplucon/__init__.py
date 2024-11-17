@@ -3,7 +3,6 @@ from datetime import timedelta
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers import device_registry
 from .eplucon_api.eplucon_client import EpluconApi, ApiError, DeviceDTO, BASE_URL
 from .const import DOMAIN, PLATFORMS, EPLUCON_PORTAL_URL, MANUFACTURER, SUPPORTED_TYPES
@@ -21,9 +20,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     api_endpoint = entry.data.get("api_endpoint", BASE_URL)
 
     devices = entry.data["devices"]
-
-    session = async_get_clientsession(hass)
-    client = EpluconApi(api_token, api_endpoint, session)
+    client = EpluconApi(api_token, api_endpoint)
 
     await register_devices(devices, entry, hass)
 
