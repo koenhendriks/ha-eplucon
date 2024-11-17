@@ -13,7 +13,7 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.components.binary_sensor import BinarySensorDeviceClass
 from homeassistant.const import (
-    UnitOfTemperature, REVOLUTIONS_PER_MINUTE, UnitOfPressure, UnitOfEnergy, UnitOfTime, UnitOfPower,
+    UnitOfTemperature, REVOLUTIONS_PER_MINUTE, UnitOfPressure, UnitOfEnergy, UnitOfTime, UnitOfPower, PERCENTAGE,
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -31,6 +31,8 @@ _LOGGER = logging.getLogger(__name__)
 @dataclass(kw_only=True)
 class EpluconSensorEntityDescription(SensorEntityDescription):
     """Describes an Eplucon sensor entity."""
+    key: str
+    name: str
     exists_fn: Callable[[Any], bool] = lambda _: True
     value_fn: Callable[[Any], SensorEntityDescription]
 
@@ -59,7 +61,7 @@ SENSORS: tuple[EpluconSensorEntityDescription, ...] = (
         key="brine_circulation_pump",
         name="Brine Circulation Pump",
         state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=REVOLUTIONS_PER_MINUTE,
+        native_unit_of_measurement=PERCENTAGE,
         value_fn=lambda device: device.realtime_info.common.brine_circulation_pump,
         exists_fn=lambda device: device.realtime_info is not None and device.realtime_info.common is not None and device.realtime_info.common.brine_circulation_pump is not None,
     ),
@@ -249,7 +251,7 @@ SENSORS: tuple[EpluconSensorEntityDescription, ...] = (
         key="production_circulation_pump",
         name="Production Circulation Pump",
         state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=REVOLUTIONS_PER_MINUTE,
+        native_unit_of_measurement=PERCENTAGE,
         value_fn=lambda device: device.realtime_info.common.production_circulation_pump,
         exists_fn=lambda device: device.realtime_info is not None and device.realtime_info.common is not None and device.realtime_info.common.production_circulation_pump is not None,
     ),
@@ -332,18 +334,22 @@ exists_fn=lambda device: device.realtime_info is not None and device.realtime_in
     EpluconSensorEntityDescription(
         key="spf",
         name="Seasonal Performance Factor (SPF)",
+        state_class=SensorStateClass.MEASUREMENT,
         value_fn=lambda device: device.realtime_info.common.spf,
         exists_fn=lambda device: device.realtime_info is not None and device.realtime_info.common is not None and device.realtime_info.common.spf is not None,
     ),
     EpluconSensorEntityDescription(
         key="position_expansion_ventil",
         name="Position Expansion Ventil",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=PERCENTAGE,
         value_fn=lambda device: device.realtime_info.common.position_expansion_ventil,
         exists_fn=lambda device: device.realtime_info is not None and device.realtime_info.common is not None and device.realtime_info.common.position_expansion_ventil is not None,
     ),
     EpluconSensorEntityDescription(
         key="number_of_starts",
         name="Number of Starts",
+        state_class=SensorStateClass.TOTAL_INCREASING,
         value_fn=lambda device: device.realtime_info.common.number_of_starts,
         exists_fn=lambda device: device.realtime_info is not None and device.realtime_info.common is not None and device.realtime_info.common.number_of_starts is not None,
     ),
@@ -382,10 +388,41 @@ exists_fn=lambda device: device.realtime_info is not None and device.realtime_in
     EpluconSensorEntityDescription(
         key="operation_mode",
         name="Operation Mode",
+        device_class=SensorDeviceClass.ENUM,
         value_fn=lambda device: device.realtime_info.common.operation_mode,
         exists_fn=lambda device: device.realtime_info is not None and device.realtime_info.common is not None and device.realtime_info.common.operation_mode is not None,
     ),
+    EpluconSensorEntityDescription(
+        key="operation_mode_text",
+        name="Operation Mode Text",
+        device_class=SensorDeviceClass.ENUM,
+        value_fn=lambda device: get_friendly_operation_mode_text(device),
+        exists_fn=lambda device: device.realtime_info is not None and device.realtime_info.common is not None and device.realtime_info.common.operation_mode is not None,
+    ),
 )
+
+def get_friendly_operation_mode_text(device: DeviceDTO) -> str:
+    # TODO: Consider adding localization options for the operation mode text, now hardcoded Dutch.
+    try:
+        operation_mode = int(device.realtime_info.common.operation_mode)
+    except TypeError:
+        _LOGGER.debug(f"Operation mode is not available for device {device.id}")
+        return "Unavailable"
+
+    match operation_mode:
+        case 1:
+            return "Koeling"
+        case 2:
+            return "Verwarming"
+        case 3:
+            return "Auto th-TOUCH"
+        case 4:
+            return "Auto Wp"
+        case 5:
+            return "Haard"
+        case _:
+            return "Unknown operation mode"
+
 
 
 async def async_setup_entry(

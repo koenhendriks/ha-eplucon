@@ -6,6 +6,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.3.0](https://github.com/koenhendriks/ha-eplucon/releases/1.3.0) - 2024-11-05
+
+### Added 
+* ([#10](https://github.com/koenhendriks/ha-eplucon/issues/10)) Add option to enter custom endpoint for API
+* ([#9](https://github.com/koenhendriks/ha-eplucon/issues/9)) Added friendly text sensor for Operation Mode displaying the state as following:
+    *  Koeling
+    * Verwarming
+    * Auto th-TOUCH
+    * Auto Wp
+    * Haard
+
+### Fixed
+* ([#8](https://github.com/koenhendriks/ha-eplucon/issues/8)) Sensors with missing measurements
+    * SPF
+    * Position Expansion Ventil
+    * Number of Starts
+    * Operation Mode
+
+
+## [1.2.2](https://github.com/koenhendriks/ha-eplucon/releases/1.2.2) - 2024-09-23
+
+### Fixed
+- Fixed [#4](https://github.com/koenhendriks/ha-eplucon/issues/4), Brine and Production Circulation Pump now have percentage as unit.
+
+### Updated
+- Updated `requirements.txt` to version `dacite` up until next major release ([#2](https://github.com/koenhendriks/ha-eplucon/issues/2)). 
+
 ## [1.2.1](https://github.com/koenhendriks/ha-eplucon/releases/1.2.1) - 2024-09-08
 
 ### Added
