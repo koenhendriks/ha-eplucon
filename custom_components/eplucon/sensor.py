@@ -393,6 +393,27 @@ exists_fn=lambda device: device.realtime_info is not None and device.realtime_in
         exists_fn=lambda device: device.realtime_info is not None and device.realtime_info.common is not None and device.realtime_info.common.operation_mode is not None,
     ),
     EpluconSensorEntityDescription(
+        key="heatloading_active",
+        name="Heatloading Active",
+        device_class=SensorDeviceClass.ENUM,
+        value_fn=lambda device: device.heatloading_status.heatloading_active,
+        exists_fn=lambda device: device.heatloading_status is not None and device.heatloading_status.heatloading_active is not None,
+    ),
+    EpluconSensorEntityDescription(
+        key="domestic_hot_water",
+        name="Domestic Hot Water",
+        device_class=SensorDeviceClass.ENUM,
+        value_fn=lambda device: device.heatloading_status.configurations["domestic_hot_water"],
+        exists_fn=lambda device: device.heatloading_status is not None and device.heatloading_status.configurations is not None and "domestic_hot_water" in device.heatloading_status.configurations,
+    ),
+    EpluconSensorEntityDescription(
+        key="heatloading_for_heating",
+        name="Heatloading for Heating",
+        device_class=SensorDeviceClass.ENUM,
+        value_fn=lambda device: device.heatloading_status.configurations["domestic_hot_water"],
+        exists_fn=lambda device: device.heatloading_status is not None and device.heatloading_status.configurations is not None and "heatloading_for_heating" in device.heatloading_status.configurations,
+    ),
+    EpluconSensorEntityDescription(
         key="operation_mode_text",
         name="Operation Mode Text",
         device_class=SensorDeviceClass.ENUM,
