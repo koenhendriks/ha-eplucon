@@ -49,6 +49,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 realtime_info = await client.get_realtime_info(entry_device.id)
                 entry_device.realtime_info = realtime_info
 
+                heatloading_status = await client.get_heatpump_heatloading_status(entry_device.id)
+                entry_device.heatloading_status = heatloading_status
+
             return entry_devices
 
         except ApiError as err:
