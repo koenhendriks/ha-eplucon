@@ -24,9 +24,9 @@ class ApiError(Exception):
 class EpluconApi:
     """Client to talk to Eplucon API"""
 
-    def __init__(self, api_token: str, api_endpoint: str|None, session: Optional[aiohttp.ClientSession] = None) -> None:
+    def __init__(self, api_token: str, api_endpoint: str | None) -> None:
         self._base = api_endpoint if api_endpoint else BASE_URL
-        self._session = session or aiohttp.ClientSession()
+        self._session = aiohttp.ClientSession()
         self._headers = {
             "Accept": "application/json",
             "Cache-Control": "no-cache",
