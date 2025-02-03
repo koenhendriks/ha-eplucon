@@ -160,7 +160,7 @@ SENSORS: tuple[EpluconSensorEntityDescription, ...] = (
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         device_class=SensorDeviceClass.ENERGY,
-        value_fn=lambda device: device.realtime_info.common.export_energy,
+        value_fn=lambda device: device.realtime_info.common.export_energy / 100 if device.realtime_info.common.export_energy > 0 else device.realtime_info.common.export_energy,
         exists_fn=lambda device: device.realtime_info is not None and device.realtime_info.common is not None and device.realtime_info.common.export_energy is not None,
     ),
     EpluconSensorEntityDescription(
@@ -188,7 +188,7 @@ SENSORS: tuple[EpluconSensorEntityDescription, ...] = (
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         device_class=SensorDeviceClass.ENERGY,
-        value_fn=lambda device: device.realtime_info.common.import_energy,
+        value_fn=lambda device: device.realtime_info.common.import_energy / 100 if device.realtime_info.common.import_energy > 0 else device.realtime_info.common.import_energy,
         exists_fn=lambda device: device.realtime_info is not None and device.realtime_info.common is not None and device.realtime_info.common.import_energy is not None,
     ),
     EpluconSensorEntityDescription(
@@ -277,7 +277,7 @@ SENSORS: tuple[EpluconSensorEntityDescription, ...] = (
         key="total_active_power",
         name="Total Active Power",
         state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=UnitOfPower.WATT,
+        native_unit_of_measurement=UnitOfPower.KILO_WATT,
         device_class=SensorDeviceClass.POWER,
         value_fn=lambda device: device.realtime_info.common.total_active_power,
         exists_fn=lambda device: device.realtime_info is not None and device.realtime_info.common is not None and device.realtime_info.common.total_active_power is not None,
