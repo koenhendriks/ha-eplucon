@@ -356,8 +356,8 @@ exists_fn=lambda device: device.realtime_info is not None and device.realtime_in
     EpluconSensorEntityDescription(
         key="heating_mode",
         name="Heating Mode",
-        device_class=BinarySensorDeviceClass.HEAT,
-        value_fn=lambda device: "ON" if device.realtime_info.common.heating_mode in ["ON", "1"] else "OFF",
+        device_class=SensorDeviceClass.ENUM,
+        value_fn=lambda device: device.realtime_info.common.heating_mode,
         exists_fn=lambda device: device.realtime_info is not None and device.realtime_info.common is not None and device.realtime_info.common.heating_mode is not None,
     ),
     EpluconSensorEntityDescription(
