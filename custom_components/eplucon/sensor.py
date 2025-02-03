@@ -420,6 +420,13 @@ exists_fn=lambda device: device.realtime_info is not None and device.realtime_in
         value_fn=lambda device: get_friendly_operation_mode_text(device),
         exists_fn=lambda device: device.realtime_info is not None and device.realtime_info.common is not None and device.realtime_info.common.operation_mode is not None,
     ),
+    EpluconSensorEntityDescription(
+        key="heating_mode_text",
+        name="Heating Mode Text",
+        device_class=SensorDeviceClass.ENUM,
+        value_fn=lambda device: get_friendly_heating_mode_text(device),
+        exists_fn=lambda device: device.realtime_info is not None and device.realtime_info.common is not None and device.realtime_info.common.heating_mode is not None,
+    ),
 )
 
 def get_friendly_operation_mode_text(device: DeviceDTO) -> str:
@@ -444,7 +451,24 @@ def get_friendly_operation_mode_text(device: DeviceDTO) -> str:
         case _:
             return "Unknown operation mode"
 
+def get_friendly_heating_mode_text(device: DeviceDTO) -> str:
+    try:
+        heating_mode = int(device.realtime_info.common.heating_mode)
+    except TypeError:
+        _LOGGER.debug(f"Heating mode is not available for device {device.id}")
+        return "Unavailable"
 
+    match heating_mode:
+        case 0:
+            return "Off"
+        case 1:
+            return "On"
+        case 2:
+            return "Emergency operation"
+        case 3:
+            return "APX"
+        case _:
+            return "Unknown operation mode"
 
 async def async_setup_entry(
         hass: HomeAssistant,
