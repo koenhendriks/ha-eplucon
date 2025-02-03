@@ -22,7 +22,7 @@ class CommonInfoDTO:
     cv_pressure: Union[float, str]
     evaporation_temperature: Union[float, str]
     condensation_temperature: Union[float, str]
-    inverter_temperature: int
+    inverter_temperature: Union[float, str]
     compressor_speed: int
     suction_gas_temperature: Union[float, str]
     suction_gas_pressure: Union[float, str]
@@ -30,7 +30,7 @@ class CommonInfoDTO:
     press_gas_pressure: Union[float, str]
     overheating: Union[float, str]
     position_expansion_ventil: int
-    total_active_power: int
+    total_active_power: Union[float, str]
     number_of_starts: int
     operating_hours: int
     operation_mode: int
