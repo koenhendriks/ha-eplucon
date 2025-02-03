@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.4.0](https://github.com/koenhendriks/ha-eplucon/releases/1.4.0) - 2025-02-03
+
+### Added
+* ([!18](https://github.com/koenhendriks/ha-eplucon/pull/18)) Adding HeatLoading Status and sensors by [@ArneDT](https://github.com/ArneDT)
+* ([#19](https://github.com/koenhendriks/ha-eplucon/issues/19)) Added friendly text sensor (thanks to [@joopmartens](https://github.com/joopmartens)) for Heating Mode displaying the state as following:
+    * Turned off
+    * Turned on
+    * Emergency operation
+    * APX
+  
+### Fixed
+* ([#15](https://github.com/koenhendriks/ha-eplucon/issues/15)) Total active power (and inverter temperature) is now parsed as float.
+* ([#13](https://github.com/koenhendriks/ha-eplucon/issues/13)) Total active power is now in KiloWatt, Import and export energy are now divided by 100 where possible.
+
 ## [1.3.0](https://github.com/koenhendriks/ha-eplucon/releases/1.3.0) - 2024-11-05
 
 ### Added 
