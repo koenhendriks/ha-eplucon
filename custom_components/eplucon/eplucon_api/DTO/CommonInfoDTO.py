@@ -44,6 +44,7 @@ class CommonInfoDTO:
     production_circulation_pump: Union[float, str]
     act_vent_rpm: Union[float, str]
     alarm_active: bool
+    alarm_time: Optional[str]
     active_requests_ww: str
     current_heating_pump_state: int
     current_heating_state: int
