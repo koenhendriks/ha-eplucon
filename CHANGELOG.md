@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.4.1](https://github.com/koenhendriks/ha-eplucon/releases/1.4.1) - 2025-03-23
+
+### Fixed
+
+- Fixed error when mapping json from API to CommonInfoDTO ([#23](https://github.com/koenhendriks/ha-eplucon/issues/23))
+
 ## [1.4.0](https://github.com/koenhendriks/ha-eplucon/releases/1.4.0) - 2025-02-03
 
 ### Added
