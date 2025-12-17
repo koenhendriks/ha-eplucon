@@ -84,7 +84,8 @@ class EpluconOptionsFlowHandler(config_entries.OptionsFlow):
 
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
         """Initialize Eplucon options flow."""
-        self.config_entry = config_entry
+        super().__init__()
+        self._config_entry = config_entry
 
     async def async_step_init(self, user_input: Optional[Dict[str, Any]] = None) -> FlowResult:
         """Manage the options for the integration."""
@@ -113,7 +114,7 @@ class EpluconOptionsFlowHandler(config_entries.OptionsFlow):
                 if len(devices) > 0:
                     # Update the configuration entry with the new API token and devices
                     self.hass.config_entries.async_update_entry(
-                        self.config_entry,
+                        self._config_entry,
                         data={
                             "api_token": api_token,
                             "devices": devices
@@ -142,8 +143,8 @@ class EpluconOptionsFlowHandler(config_entries.OptionsFlow):
         return self.async_show_form(
             step_id="init",
             data_schema=vol.Schema({
-                vol.Required("api_token", default=self.config_entry.data.get("api_token")): str,
-                vol.Required("api_endpoint", default=self.config_entry.data.get("api_endpoint", BASE_URL)): str
+                vol.Required("api_token", default=self._config_entry.data.get("api_token")): str,
+                vol.Required("api_endpoint", default=self._config_entry.data.get("api_endpoint", BASE_URL)): str
             }),
             errors=errors
         )
