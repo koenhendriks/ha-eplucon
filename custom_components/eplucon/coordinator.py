@@ -93,7 +93,7 @@ class MyEntity(CoordinatorEntity, SensorEntity):
 
     """
 
-    _attr_should_poll = True
+    _attr_should_poll = False
 
     def __init__(self, coordinator, idx):
         """Pass coordinator to CoordinatorEntity."""
@@ -103,5 +103,5 @@ class MyEntity(CoordinatorEntity, SensorEntity):
     @callback
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
-        self._attr_is_on = self.coordinator.data[self.idx]["state"]
+        self._attr_native_value = self.coordinator.data[self.idx]["state"]
         self.async_write_ha_state()
