@@ -15,6 +15,8 @@ from homeassistant.helpers.update_coordinator import (
 )
 
 from .const import DOMAIN
+from .eplucon_api.eplucon_client import ApiAuthError, ApiError
+
 
 _LOGGER = logging.getLogger(__name__)
 
