@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import aiohttp
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from .DTO.CommonInfoDTO import CommonInfoDTO
 from .DTO.DeviceDTO import DeviceDTO
@@ -10,70 +10,102 @@ from .DTO.RealtimeInfoDTO import RealtimeInfoDTO
 from .DTO.HeatLoadingDTO import HeatLoadingDTO
 
 BASE_URL = "https://portaal.eplucon.nl/api/v2"
-_LOGGER: logging.Logger = logging.getLogger(__package__)
+
+_LOGGER = logging.getLogger(__package__)
 
 
 class ApiAuthError(Exception):
-    pass
+    """Authentication failed"""
 
 
 class ApiError(Exception):
-    pass
+    """Generic API error"""
 
 
 class EpluconApi:
-    """Client to talk to Eplucon API"""
+    """Client to talk to the Eplucon API."""
 
-    def __init__(self, api_token: str, api_endpoint: str|None, session: Optional[aiohttp.ClientSession] = None) -> None:
-        self._base = api_endpoint if api_endpoint else BASE_URL
-        self._session = session or aiohttp.ClientSession()
+    def __init__(
+        self,
+        api_token: str,
+        api_endpoint: str | None = None,
+        session: aiohttp.ClientSession | None = None,
+    ) -> None:
+        self._base = api_endpoint or BASE_URL
+
+        if session is None:
+            raise RuntimeError("aiohttp ClientSession is required")
+
+        self._session = session
         self._headers = {
             "Accept": "application/json",
             "Cache-Control": "no-cache",
-            "Authorization": f"Bearer {api_token}"
+            "Authorization": f"Bearer {api_token}",
         }
 
-        _LOGGER.debug("Initialize Eplucon API client")
+        _LOGGER.debug(
+            "Initialized Eplucon API client (endpoint=%s)",
+            self._base,
+        )
+
+
 
     async def get_devices(self) -> list[DeviceDTO]:
         url = f"{self._base}/econtrol/modules"
-        _LOGGER.debug(f"Eplucon Get devices {url}")
+        _LOGGER.debug("Fetching devices list: %s", url)
+
         async with self._session.get(url, headers=self._headers) as response:
-            devices = await response.json()
-            self.validate_response(devices)
-            data = devices.get('data', [])
-            return [DeviceDTO(**device) for device in data]
+            data = await response.json()
+
+        _LOGGER.debug("Devices raw response: %s", data)
+        self._validate_response(data)
+
+        devices: list[DeviceDTO] = []
+
+        for item in data.get("data", []):
+            try:
+                devices.append(DeviceDTO(**item))
+            except Exception:
+                _LOGGER.exception("Failed to parse device DTO: %s", item)
+
+        _LOGGER.debug("Parsed %d Eplucon devices", len(devices))
+        return devices
+
 
     async def get_realtime_info(self, module_id: int) -> RealtimeInfoDTO:
         url = f"{self._base}/econtrol/modules/{module_id}/get_realtime_info"
-        _LOGGER.debug(f"Eplucon Get realtime info for {module_id}: {url}")
+        _LOGGER.debug("Fetching realtime info for %s: %s", module_id, url)
 
         async with self._session.get(url, headers=self._headers) as response:
             data = await response.json()
-            self.validate_response(data)
 
-            common_info = CommonInfoDTO(**data['data']['common'])
-            heatpump_info = data['data']['heatpump']  # Not sure what this could be
-            realtime_info = RealtimeInfoDTO(common=common_info, heatpump=heatpump_info)
+        _LOGGER.debug("Realtime raw response for %s: %s", module_id, data)
+        self._validate_response(data)
 
-            return realtime_info
+        common = CommonInfoDTO(**data["data"]["common"])
+        heatpump = data["data"].get("heatpump")
 
-    async def get_heatpump_heatloading_status(self, module_id: int) -> dict:
+        return RealtimeInfoDTO(common=common, heatpump=heatpump)
+
+    async def get_heatpump_heatloading_status(self, module_id: int) -> HeatLoadingDTO:
         url = f"{self._base}/econtrol/modules/{module_id}/heatloading_status"
-        _LOGGER.debug(f"Eplucon Get heatpump heatloading status for {module_id}: {url}")
+        _LOGGER.debug("Fetching heatloading status for %s: %s", module_id, url)
 
         async with self._session.get(url, headers=self._headers) as response:
             data = await response.json()
-            self.validate_response(data)
 
-            heatloading_status = HeatLoadingDTO(**data['data'])
-            return heatloading_status
+        _LOGGER.debug("Heatloading raw response for %s: %s", module_id, data)
+        self._validate_response(data)
+
+        return HeatLoadingDTO(**data["data"])
 
     @staticmethod
-    def validate_response(response: Any) -> None:
-        _LOGGER.debug(f"Validating API response for {response}")
-        if 'auth' not in response:
-            raise ApiError('Error from Eplucon API, expecting auth key in response.')
+    def _validate_response(response: Any) -> None:
+        if not isinstance(response, dict):
+            raise ApiError("Invalid API response type")
 
-        if not response['auth']:
-            raise ApiAuthError("Authentication failed: Please check the given API key.")
+        if "auth" not in response:
+            raise ApiError("Missing 'auth' field in API response")
+
+        if response["auth"] is not True:
+            raise ApiAuthError("Authentication failed")
