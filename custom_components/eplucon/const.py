@@ -2,12 +2,17 @@ from __future__ import annotations
 from dataclasses import dataclass
 from collections.abc import Callable
 
+
+from homeassistant.components.binary_sensor import (
+    BinarySensorEntityDescription,
+    BinarySensorDeviceClass,
+)
+
 from homeassistant.components.sensor import (
     SensorEntityDescription,
     SensorDeviceClass,
     SensorStateClass,
 )
-from homeassistant.components.binary_sensor import BinarySensorDeviceClass
 
 from homeassistant.const import (
     UnitOfTemperature,
@@ -24,7 +29,7 @@ from typing import Any
 
 DOMAIN = "eplucon"
 MANUFACTURER = "Eplucon"
-PLATFORMS = ["sensor"]
+PLATFORMS = ["sensor", "binary_sensor"]
 EPLUCON_PORTAL_URL = "https://portaal.eplucon.nl/"
 SUPPORTED_TYPES = ["heat_pump"]
 
@@ -67,6 +72,9 @@ def normalize_on_off(value):
         return "ON"
     return "OFF"
 
+def normalize_bool(value) -> bool:
+    return str(value).upper() in ["1", "ON", "TRUE"]
+
 def normalize_number(value):
     """Normalize numeric values safely."""
     try:
@@ -83,11 +91,20 @@ def normalize_number(value):
 
 @dataclass(kw_only=True)
 class EpluconSensorEntityDescription(SensorEntityDescription):
-    """Describes an Eplucon sensor entity."""
     key: str
     name: str
+    value_fn: Callable[[Any], Any]
     exists_fn: Callable[[Any], bool] = lambda _: True
-    value_fn: Callable[[Any], SensorEntityDescription]
+
+
+@dataclass(kw_only=True)
+class EpluconBinarySensorEntityDescription(BinarySensorEntityDescription):
+    key: str
+    name: str
+    value_fn: Callable[[Any], bool] | None = None
+    exists_fn: Callable[[Any], bool] = lambda _: True
+
+
 
 
 RAW_SENSOR_DEFS = [
@@ -128,22 +145,22 @@ RAW_SENSOR_DEFS = [
 
 # ON/OFF sensors
 ONOFF_SENSOR_DEFS = [
-    {"key": "dg1", "name": "Direct Outlet (DG1)", "attr": "dg1", "device_class": BinarySensorDeviceClass.HEAT},
-    {"key": "sg2", "name": "Mixture Outlet (SG2)", "attr": "sg2", "device_class": BinarySensorDeviceClass.HEAT},
-    {"key": "sg3", "name": "Mixture Outlet (SG3)", "attr": "sg3", "device_class": BinarySensorDeviceClass.HEAT},
-    {"key": "sg4", "name": "Mixture Outlet (SG4)", "attr": "sg4", "device_class": BinarySensorDeviceClass.HEAT},
-    {"key": "warmwater", "name": "Warm Water", "attr": "warmwater", "device_class": BinarySensorDeviceClass.HEAT},
+    {"key": "dg1", "name": "Direct Outlet (DG1)", "attr": "dg1", "device_class": BinarySensorDeviceClass.RUNNING},
+    {"key": "sg2", "name": "Mixture Outlet (SG2)", "attr": "sg2", "device_class": BinarySensorDeviceClass.RUNNING},
+    {"key": "sg3", "name": "Mixture Outlet (SG3)", "attr": "sg3", "device_class": BinarySensorDeviceClass.RUNNING},
+    {"key": "sg4", "name": "Mixture Outlet (SG4)", "attr": "sg4", "device_class": BinarySensorDeviceClass.RUNNING},
+    {"key": "warmwater", "name": "Warm Water", "attr": "warmwater", "device_class": None},
     {"key": "alarm_active", "name": "Alarm Active", "attr": "alarm_active", "device_class": BinarySensorDeviceClass.PROBLEM},
-    {"key": "current_heating_pump_state", "name": "Current Heating Pump State", "attr": "current_heating_pump_state", "device_class": BinarySensorDeviceClass.HEAT},
+    {"key": "current_heating_pump_state", "name": "Current Heating Pump State", "attr": "current_heating_pump_state", "device_class": None},
     {"key": "current_heating_state", "name": "Current Heating State", "attr": "current_heating_state", "device_class": BinarySensorDeviceClass.HEAT},
-    {"key": "active_requests_ww", "name": "Active WW request", "attr": "active_requests_ww", "device_class": BinarySensorDeviceClass.HEAT},
+    {"key": "active_requests_ww", "name": "Active WW request", "attr": "active_requests_ww", "device_class": None},
 ]
 
 # Heatloading status sensors
 HEATLOADING_SENSOR_DEFS = [
-    {"key": "heatloading_active", "name": "Heatloading Active", "attr": "heatloading_active", "device_class": SensorDeviceClass.ENUM, "source": "heatloading_status"},
-    {"key": "domestic_hot_water", "name": "Domestic Hot Water", "attr": "domestic_hot_water", "device_class": SensorDeviceClass.ENUM, "source": "heatloading_status"},
-    {"key": "heatloading_for_heating", "name": "Heatloading for Heating", "attr": "heatloading_for_heating", "device_class": SensorDeviceClass.ENUM, "source": "heatloading_status"},
+    {"key": "heatloading_active", "name": "Heatloading Active", "attr": "heatloading_active", "device_class": None, "value_fn": lambda d: d.heatloading_status.heatloading_active, "exists_fn": lambda d: d.heatloading_status is not None,},
+    {"key": "domestic_hot_water", "name": "Domestic Hot Water", "attr": "domestic_hot_water", "device_class": None, "value_fn": lambda d: d.heatloading_status.configurations.get("domestic_hot_water"), "exists_fn": lambda d: (d.heatloading_status is not None and d.heatloading_status.configurations is not None and "domestic_hot_water" in d.heatloading_status.configurations),},
+    {"key": "heatloading_for_heating", "name": "Heatloading for Heating", "attr": "heatloading_for_heating", "device_class": None, "value_fn": lambda d: d.heatloading_status.configurations.get("heatloading_for_heating"), "exists_fn": lambda d: (d.heatloading_status is not None and d.heatloading_status.configurations is not None and "heatloading_for_heating" in d.heatloading_status.configurations),},
 ]
 
 # Friendly text sensors
@@ -157,6 +174,7 @@ FRIENDLY_TEXT_SENSOR_DEFS = [
 # ----------------------
 
 sensor_list = []
+binary_sensor_list = []
 
 # Numeric sensors
 for s in RAW_SENSOR_DEFS:
@@ -178,12 +196,12 @@ for s in RAW_SENSOR_DEFS:
 # ON/OFF sensors
 for s in ONOFF_SENSOR_DEFS:
     attr = s["attr"]
-    sensor_list.append(
-        EpluconSensorEntityDescription(
+    binary_sensor_list.append(
+        EpluconBinarySensorEntityDescription(
             key=s["key"],
             name=s["name"],
             device_class=s.get("device_class"),
-            value_fn=lambda device, attr=attr: normalize_on_off(
+            value_fn=lambda device, attr=attr: normalize_bool(
                 getattr(getattr(device.realtime_info, "common", {}), attr, "OFF")
             ),
             exists_fn=lambda device, attr=attr: getattr(getattr(device.realtime_info, "common", {}), attr, None) is not None,
@@ -193,16 +211,13 @@ for s in ONOFF_SENSOR_DEFS:
 # Heatloading sensors
 for s in HEATLOADING_SENSOR_DEFS:
     attr = s["attr"]
-    src = s["source"]
-    sensor_list.append(
-        EpluconSensorEntityDescription(
+    binary_sensor_list.append(
+        EpluconBinarySensorEntityDescription(
             key=s["key"],
             name=s["name"],
             device_class=s.get("device_class"),
-            value_fn=lambda device, attr=attr, src=src: normalize_on_off(
-                getattr(getattr(device, src, {}), attr, "OFF")
-            ),
-            exists_fn=lambda device, attr=attr, src=src: getattr(getattr(device, src, {}), attr, None) is not None,
+            value_fn=s.get("value_fn"),
+            exists_fn=s.get("exists_fn"),
         )
     )
 
@@ -220,3 +235,4 @@ for s in FRIENDLY_TEXT_SENSOR_DEFS:
     )
 
 SENSORS = tuple(sensor_list)
+BINARY_SENSORS = tuple(binary_sensor_list)
