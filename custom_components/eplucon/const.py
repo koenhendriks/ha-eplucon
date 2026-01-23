@@ -131,7 +131,7 @@ RAW_SENSOR_DEFS = [
     {"key": "brine_circulation_pump", "name": "Brine Circulation Pump", "attr": "brine_circulation_pump", "unit": PERCENTAGE, "state_class": SensorStateClass.MEASUREMENT},
     {"key": "production_circulation_pump", "name": "Production Circulation Pump", "attr": "production_circulation_pump", "unit": PERCENTAGE, "state_class": SensorStateClass.MEASUREMENT},
     {"key": "act_vent_rpm", "name": "Act Vent RPM", "attr": "act_vent_rpm", "unit": REVOLUTIONS_PER_MINUTE, "state_class": SensorStateClass.MEASUREMENT},
-    {"key": "total_active_power", "name": "Total Active Power", "attr": "total_active_power", "unit": UnitOfPower.KILO_WATT, "state_class": SensorStateClass.MEASUREMENT, "device_class": SensorDeviceClass.ENERGY},
+    {"key": "total_active_power", "name": "Total Active Power", "attr": "total_active_power", "unit": UnitOfPower.KILO_WATT, "state_class": SensorStateClass.MEASUREMENT, "device_class": SensorDeviceClass.POWER},
     {"key": "energy_usage", "name": "Energy Usage", "attr": "energy_usage", "unit": UnitOfEnergy.KILO_WATT_HOUR, "state_class": SensorStateClass.TOTAL_INCREASING, "device_class": SensorDeviceClass.ENERGY},
     {"key": "energy_delivered", "name": "Energy Delivered", "attr": "energy_delivered", "unit": UnitOfEnergy.KILO_WATT_HOUR, "state_class": SensorStateClass.TOTAL_INCREASING, "device_class": SensorDeviceClass.ENERGY},
     {"key": "import_energy", "name": "Import Energy", "attr": "import_energy", "unit": UnitOfEnergy.KILO_WATT_HOUR, "state_class": SensorStateClass.TOTAL_INCREASING, "device_class": SensorDeviceClass.ENERGY},
