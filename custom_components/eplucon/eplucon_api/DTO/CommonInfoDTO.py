@@ -14,8 +14,8 @@ class CommonInfoDTO:
     heating_out_temperature: Union[float, str]
     energy_usage: int
     energy_delivered: int
-    import_energy: int
-    export_energy: int
+    import_energy: Union[float, str]
+    export_energy: Union[float, str]
     ww_temperature: Union[float, str]
     ww_temperature_configured: float
     brine_pressure: Union[float, str]
