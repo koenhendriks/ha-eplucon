@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import time
 import asyncio
+import dataclasses
 from datetime import timedelta
 from typing import Dict
 
@@ -20,6 +21,8 @@ from .const import (
     EPLUCON_PORTAL_URL,
     MANUFACTURER,
     SUPPORTED_TYPES,
+    HEAT_PUMP_TYPES,
+    ZONE_CONTROLLER_TYPES,
 )
 from .eplucon_api.eplucon_client import (
     EpluconApi,
@@ -77,6 +80,89 @@ async def device_dict_to_dto(device: DeviceDTO | dict) -> DeviceDTO:
     return device
 
 
+async def _update_heat_pump(client, device: DeviceDTO, hass: HomeAssistant) -> DeviceDTO:
+    """Fetch heat pump realtime + heatloading data, with last-good fallback."""
+    realtime_info = await fetch_with_retry(client.get_realtime_info, device.id)
+    _LOGGER.debug("Realtime info for %s: %s", device.id, realtime_info)
+
+    heatloading_status = await fetch_with_retry(
+        client.get_heatpump_heatloading_status, device.id
+    )
+    _LOGGER.debug("Heatloading status for %s: %s", device.id, heatloading_status)
+
+    # Validate before overwriting
+    if is_valid_realtime_info(realtime_info):
+        device.realtime_info = realtime_info
+        device.heatloading_status = heatloading_status
+        hass.data[DOMAIN]["last_good_devices"][device.id] = device
+    else:
+        _LOGGER.warning(
+            "Invalid realtime data for device %s, keeping last known values",
+            device.id,
+        )
+        last_good = hass.data[DOMAIN]["last_good_devices"].get(device.id)
+        if last_good:
+            device = last_good
+
+    return device
+
+
+async def _update_zone_controller(client, device: DeviceDTO, hass: HomeAssistant) -> DeviceDTO:
+    """Fetch the regulation zones for a zones_system_controller module."""
+    zones = await fetch_with_retry(client.get_zones, device.id)
+    _LOGGER.debug("Fetched %d zones for %s", len(zones or []), device.id)
+
+    if zones:
+        device.zones = zones
+        hass.data[DOMAIN]["last_good_devices"][device.id] = device
+    else:
+        last_good = hass.data[DOMAIN]["last_good_devices"].get(device.id)
+        if last_good:
+            device = last_good
+
+    return device
+
+
+def _device_id(device) -> object:
+    """Return the module id from a stored dict or a DeviceDTO."""
+    return device["id"] if isinstance(device, dict) else device.id
+
+
+async def _ensure_supported_devices(hass: HomeAssistant, entry: ConfigEntry, client) -> None:
+    """Merge in supported modules missing from the stored config entry.
+
+    Older versions only stored heat_pump modules, so zone controllers added
+    to an account (or supported by a newer release) never appeared. Re-fetch
+    the module list at setup and add any supported module we don't have yet.
+    """
+    try:
+        fetched = await client.get_devices()
+    except Exception:  # network/API hiccup: keep the stored list, try again next start
+        _LOGGER.warning("Could not refresh Eplucon module list at setup", exc_info=True)
+        return
+
+    existing = list(entry.data.get("devices", []))
+    existing_ids = {_device_id(d) for d in existing}
+
+    missing = [
+        dataclasses.asdict(dev)
+        for dev in fetched
+        if dev.type in SUPPORTED_TYPES and dev.id not in existing_ids
+    ]
+
+    if not missing:
+        return
+
+    _LOGGER.info(
+        "Adding %d newly supported Eplucon module(s) to the config entry: %s",
+        len(missing),
+        [(d["id"], d["type"]) for d in missing],
+    )
+    hass.config_entries.async_update_entry(
+        entry, data={**entry.data, "devices": existing + missing}
+    )
+
+
 # ----------------------------
 # Setup entry
 # ----------------------------
@@ -85,7 +171,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Eplucon from a config entry."""
     api_token = entry.data["api_token"]
     api_endpoint = entry.data.get("api_endpoint", BASE_URL)
-    devices = entry.data["devices"]
 
     session = async_get_clientsession(hass)
     client = EpluconApi(api_token, api_endpoint, session)
@@ -93,6 +178,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Store last known good devices
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN].setdefault("last_good_devices", {})
+
+    # Pick up modules (e.g. zone controllers) not present in an older entry.
+    await _ensure_supported_devices(hass, entry, client)
+    devices = entry.data["devices"]
 
     await register_devices(devices, entry, hass)
 
@@ -104,46 +193,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             for entry_device in entry.data["devices"]:
                 device = await device_dict_to_dto(entry_device)
 
-                if device.type not in SUPPORTED_TYPES:
-                    continue
-
                 _LOGGER.debug(
-                    "Updating device %s (%s)",
+                    "Updating device %s (%s, type=%s)",
                     device.name,
                     device.id,
+                    device.type,
                 )
 
-                realtime_info = await fetch_with_retry(
-                    client.get_realtime_info, device.id
-                )
-                _LOGGER.debug(
-                    "Realtime info for %s: %s",
-                    device.id,
-                    realtime_info,
-                )
-
-                heatloading_status = await fetch_with_retry(
-                    client.get_heatpump_heatloading_status, device.id
-                )
-                _LOGGER.debug(
-                    "Heatloading status for %s: %s",
-                    device.id,
-                    heatloading_status,
-                )
-
-                # Validate before overwriting
-                if is_valid_realtime_info(realtime_info):
-                    device.realtime_info = realtime_info
-                    device.heatloading_status = heatloading_status
-                    hass.data[DOMAIN]["last_good_devices"][device.id] = device
+                if device.type in HEAT_PUMP_TYPES:
+                    device = await _update_heat_pump(client, device, hass)
+                elif device.type in ZONE_CONTROLLER_TYPES:
+                    device = await _update_zone_controller(client, device, hass)
                 else:
-                    _LOGGER.warning(
-                        "Invalid realtime data for device %s, keeping last known values",
-                        device.id,
-                    )
-                    last_good = hass.data[DOMAIN]["last_good_devices"].get(device.id)
-                    if last_good:
-                        device = last_good
+                    continue
 
                 updated_devices.append(device)
 

@@ -5,6 +5,8 @@ This custom integration allows you to integrate your Eplucon devices into Home A
 ## Features
 
 - Monitor indoor temperature, vent RPM, brine circulation pump, and more in real-time.
+- Expose per-zone control panels of a zone controller (th-TOUCH) as devices, with
+  temperature, humidity, battery, signal and call-for-heat sensors (read-only).
 - Automatically update sensor data using Home Assistant's update coordinator.
 
 ## Installation
@@ -53,6 +55,22 @@ This integration provides all available sensors that can be retrieved from the [
 - **Heating Status** - if applicable
 
 These sensors are automatically created based on the real-time information available from your Eplucon device.
+
+### Zone control panels (th-TOUCH)
+
+If your installation includes a zone controller (`zones_system_controller`), each
+regulation zone / room is added as its own device with read-only entities:
+
+- **Temperature** (°C) and **Target Temperature** (°C)
+- **Humidity** (%)
+- **Battery** (%) and **Signal Strength** (%) — diagnostic
+- **Mode** and **Regulation** (heating/cooling) — diagnostic
+- **Call for Heat** — binary sensor (the zone relay state)
+
+These use the same API token; no extra credentials are required. Setting a zone's
+target temperature from Home Assistant is **not** supported: the Eplucon public API
+is read-only for zones, and the portal's write path needs a separate web login.
+See [`docs/zones-api.md`](docs/zones-api.md) for the full API investigation.
 
 ### Screenshot
 
