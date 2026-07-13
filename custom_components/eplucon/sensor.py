@@ -10,9 +10,17 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.helpers.typing import StateType
 from typing import Any
 
-from .const import DOMAIN, MANUFACTURER, SENSORS, EpluconSensorEntityDescription
+from .const import (
+    DOMAIN,
+    MANUFACTURER,
+    SENSORS,
+    ZONE_SENSORS,
+    ZONE_CONTROLLER_TYPES,
+    EpluconSensorEntityDescription,
+)
 
 from .eplucon_api.DTO.DeviceDTO import DeviceDTO
+from .zone_entity import EpluconZoneEntity
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -40,8 +48,28 @@ async def async_setup_entry(
             if description.exists_fn(device):
                 entities.append(EpluconSensorEntity(coordinator, device, description))
 
+        # Per-zone sensors for zone controllers
+        if device.type in ZONE_CONTROLLER_TYPES and device.zones:
+            for zone in device.zones:
+                for description in ZONE_SENSORS:
+                    if description.exists_fn(zone):
+                        entities.append(
+                            EpluconZoneSensorEntity(coordinator, device, zone, description)
+                        )
+
     _LOGGER.debug("Adding %d sensor entities", len(entities))
     async_add_entities(entities)
+
+
+class EpluconZoneSensorEntity(EpluconZoneEntity, SensorEntity):
+    """A read-only sensor for a single regulation zone / control panel."""
+
+    @property
+    def native_value(self) -> StateType:
+        zone = self.zone
+        if zone is None:
+            return None
+        return self.entity_description.value_fn(zone)
 
 
 class EpluconSensorEntity(CoordinatorEntity, SensorEntity):

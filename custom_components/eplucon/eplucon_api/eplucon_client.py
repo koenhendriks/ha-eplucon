@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import aiohttp
+import json
 import logging
 from typing import Any
 
@@ -8,6 +9,7 @@ from .DTO.CommonInfoDTO import CommonInfoDTO
 from .DTO.DeviceDTO import DeviceDTO
 from .DTO.RealtimeInfoDTO import RealtimeInfoDTO
 from .DTO.HeatLoadingDTO import HeatLoadingDTO
+from .DTO.ZoneDTO import ZoneDTO
 
 BASE_URL = "https://portaal.eplucon.nl/api/v2"
 
@@ -98,6 +100,65 @@ class EpluconApi:
         self._validate_response(data)
 
         return HeatLoadingDTO(**data["data"])
+
+    async def get_zones(self, module_id: int) -> list[ZoneDTO]:
+        """Fetch the regulation zones / control panels of a zone controller.
+
+        Only valid for modules of type ``zones_system_controller``; other
+        module types return HTTP 406. See docs/zones-api.md.
+        """
+        url = f"{self._base}/econtrol/modules/{module_id}/zones"
+        _LOGGER.debug("Fetching zones for %s: %s", module_id, url)
+
+        async with self._session.get(url, headers=self._headers) as response:
+            data = await response.json()
+
+        _LOGGER.debug("Zones raw response for %s: %s", module_id, data)
+        self._validate_response(data)
+
+        zones: list[ZoneDTO] = []
+        for item in data.get("data", []):
+            try:
+                zones.append(self._parse_zone(item))
+            except Exception:
+                _LOGGER.exception("Failed to parse zone DTO: %s", item)
+
+        _LOGGER.debug("Parsed %d zones for module %s", len(zones), module_id)
+        return zones
+
+    @staticmethod
+    def _parse_zone(item: dict) -> ZoneDTO:
+        """Build a ZoneDTO from one /zones entry, enriching from raw_data."""
+        zone = ZoneDTO(
+            id=int(item["id"]),
+            name=item.get("name"),
+            mode=item.get("mode"),
+            set_temperature=item.get("set_temperature"),
+            current_temperature=item.get("current_temperature"),
+        )
+
+        raw = item.get("raw_data")
+        if not raw:
+            return zone
+
+        try:
+            parsed = json.loads(raw) if isinstance(raw, str) else raw
+        except (ValueError, TypeError):
+            _LOGGER.debug("Zone %s has unparseable raw_data", zone.id)
+            return zone
+
+        z = parsed.get("zone", {}) if isinstance(parsed, dict) else {}
+        flags = z.get("flags", {}) if isinstance(z, dict) else {}
+
+        zone.humidity = z.get("humidity")
+        zone.battery_level = z.get("batteryLevel")
+        zone.signal_strength = z.get("signalStrength")
+        zone.actuators_open = z.get("actuatorsOpen")
+        zone.zone_state = z.get("zoneState")
+        zone.relay_state = flags.get("relayState")
+        zone.algorithm = flags.get("algorithm")
+
+        return zone
 
     @staticmethod
     def _validate_response(response: Any) -> None:

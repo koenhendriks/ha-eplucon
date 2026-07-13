@@ -8,8 +8,15 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, MANUFACTURER, BINARY_SENSORS
+from .const import (
+    DOMAIN,
+    MANUFACTURER,
+    BINARY_SENSORS,
+    ZONE_BINARY_SENSORS,
+    ZONE_CONTROLLER_TYPES,
+)
 from .eplucon_api.DTO.DeviceDTO import DeviceDTO
+from .zone_entity import EpluconZoneEntity
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -24,7 +31,7 @@ async def async_setup_entry(
 
     await coordinator.async_config_entry_first_refresh()
 
-    entities: list[EpluconBinarySensorEntity] = []
+    entities: list[BinarySensorEntity] = []
 
     for device in coordinator.data:
         if isinstance(device, dict):
@@ -38,8 +45,28 @@ async def async_setup_entry(
                 EpluconBinarySensorEntity(coordinator, device, description)
             )
 
+        # Per-zone binary sensors for zone controllers
+        if device.type in ZONE_CONTROLLER_TYPES and device.zones:
+            for zone in device.zones:
+                for description in ZONE_BINARY_SENSORS:
+                    if description.exists_fn(zone):
+                        entities.append(
+                            EpluconZoneBinarySensorEntity(coordinator, device, zone, description)
+                        )
+
     _LOGGER.debug("Adding %d binary sensor entities", len(entities))
     async_add_entities(entities)
+
+
+class EpluconZoneBinarySensorEntity(EpluconZoneEntity, BinarySensorEntity):
+    """A read-only binary sensor for a single regulation zone."""
+
+    @property
+    def is_on(self) -> bool:
+        zone = self.zone
+        if zone is None:
+            return False
+        return bool(self.entity_description.value_fn(zone))
 
 
 class EpluconBinarySensorEntity(CoordinatorEntity, BinarySensorEntity):

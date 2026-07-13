@@ -22,6 +22,7 @@ from homeassistant.const import (
     UnitOfPower,
     REVOLUTIONS_PER_MINUTE,
     PERCENTAGE,
+    EntityCategory,
 )
 
 from typing import Any
@@ -31,7 +32,11 @@ DOMAIN = "eplucon"
 MANUFACTURER = "Eplucon"
 PLATFORMS = ["sensor", "binary_sensor"]
 EPLUCON_PORTAL_URL = "https://portaal.eplucon.nl/"
-SUPPORTED_TYPES = ["heat_pump"]
+
+# Module types this integration knows how to handle.
+HEAT_PUMP_TYPES = ["heat_pump"]
+ZONE_CONTROLLER_TYPES = ["zones_system_controller"]
+SUPPORTED_TYPES = HEAT_PUMP_TYPES + ZONE_CONTROLLER_TYPES
 
 
 
@@ -236,3 +241,98 @@ for s in FRIENDLY_TEXT_SENSOR_DEFS:
 
 SENSORS = tuple(sensor_list)
 BINARY_SENSORS = tuple(binary_sensor_list)
+
+
+# ------------------------------------------------------------------------------------
+# Zone (control panel) sensor definitions
+#
+# These operate on a ZoneDTO (not a DeviceDTO). Read-only: temperature, humidity,
+# battery and signal are pulled from the zones API. See docs/zones-api.md.
+# ------------------------------------------------------------------------------------
+
+def _zone_number(value):
+    """Coerce a zone value to float, or None when missing."""
+    if value is None:
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+ZONE_SENSORS = (
+    EpluconSensorEntityDescription(
+        key="zone_temperature",
+        name="Temperature",
+        device_class=SensorDeviceClass.TEMPERATURE,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda zone: _zone_number(zone.current_temperature),
+        exists_fn=lambda zone: zone.current_temperature is not None,
+    ),
+    EpluconSensorEntityDescription(
+        key="zone_target_temperature",
+        name="Target Temperature",
+        device_class=SensorDeviceClass.TEMPERATURE,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda zone: _zone_number(zone.set_temperature),
+        exists_fn=lambda zone: zone.set_temperature is not None,
+    ),
+    EpluconSensorEntityDescription(
+        key="zone_humidity",
+        name="Humidity",
+        device_class=SensorDeviceClass.HUMIDITY,
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda zone: _zone_number(zone.humidity),
+        exists_fn=lambda zone: zone.humidity is not None,
+    ),
+    EpluconSensorEntityDescription(
+        key="zone_battery",
+        name="Battery",
+        device_class=SensorDeviceClass.BATTERY,
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda zone: _zone_number(zone.battery_level),
+        exists_fn=lambda zone: zone.battery_level is not None,
+    ),
+    # Signal strength here is a 0-100 scale, not dBm, so no SIGNAL_STRENGTH
+    # device class (which would imply dBm). Exposed as a plain diagnostic %.
+    EpluconSensorEntityDescription(
+        key="zone_signal_strength",
+        name="Signal Strength",
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda zone: _zone_number(zone.signal_strength),
+        exists_fn=lambda zone: zone.signal_strength is not None,
+    ),
+    # Plain text (no ENUM device class): the value sets are open/undocumented,
+    # and an ENUM sensor raises if a value is outside a declared options list.
+    EpluconSensorEntityDescription(
+        key="zone_mode",
+        name="Mode",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda zone: zone.mode,
+        exists_fn=lambda zone: zone.mode is not None,
+    ),
+    EpluconSensorEntityDescription(
+        key="zone_algorithm",
+        name="Regulation",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda zone: zone.algorithm,
+        exists_fn=lambda zone: zone.algorithm is not None,
+    ),
+)
+
+ZONE_BINARY_SENSORS = (
+    EpluconBinarySensorEntityDescription(
+        key="zone_relay",
+        name="Call for Heat",
+        device_class=BinarySensorDeviceClass.RUNNING,
+        value_fn=lambda zone: str(zone.relay_state).lower() == "on",
+        exists_fn=lambda zone: zone.relay_state is not None,
+    ),
+)
