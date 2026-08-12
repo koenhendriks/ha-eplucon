@@ -67,6 +67,11 @@ regulation zone / room is added as its own device with read-only entities:
 - **Mode** and **Regulation** (heating/cooling) — diagnostic
 - **Call for Heat** — binary sensor (the zone relay state)
 
+Entities are named after their zone, so a zone called *Woonkamer* yields
+`sensor.woonkamer_temperature`, `sensor.woonkamer_humidity` and so on. A zone
+that drops out of the API (flat control-panel battery, lost wireless link) is
+reported as unavailable rather than as a zero or an `off`.
+
 These use the same API token; no extra credentials are required. Setting a zone's
 target temperature from Home Assistant is **not** supported: the Eplucon public API
 is read-only for zones, and the portal's write path needs a separate web login.

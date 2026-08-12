@@ -118,7 +118,21 @@ async def _update_zone_controller(client, device: DeviceDTO, hass: HomeAssistant
     else:
         last_good = hass.data[DOMAIN]["last_good_devices"].get(device.id)
         if last_good:
+            _LOGGER.warning(
+                "No zones returned for controller %s, keeping last known values",
+                device.id,
+            )
             device = last_good
+        else:
+            # Entities are built at platform setup, so with nothing to fall
+            # back on this controller gets no zone entities at all until the
+            # integration is reloaded. Say so rather than finish setup quietly.
+            _LOGGER.warning(
+                "No zones returned for controller %s and no previously known "
+                "zones; no zone entities will be created until the integration "
+                "is reloaded",
+                device.id,
+            )
 
     return device
 
