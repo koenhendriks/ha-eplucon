@@ -13,6 +13,10 @@ from .DTO.ZoneDTO import ZoneDTO
 
 BASE_URL = "https://portaal.eplucon.nl/api/v2"
 
+# The zones endpoint answers 406 "Account is not a zone-controller" for a
+# module that has no zones. See docs/zones-api.md section 2.
+HTTP_NOT_ACCEPTABLE = 406
+
 _LOGGER = logging.getLogger(__package__)
 
 
@@ -39,6 +43,9 @@ class EpluconApi:
             raise RuntimeError("aiohttp ClientSession is required")
 
         self._session = session
+        # Modules the zones endpoint has already rejected with a 406, so the
+        # warning is logged once instead of on every coordinator refresh.
+        self._not_a_zone_controller: set[int] = set()
         self._headers = {
             "Accept": "application/json",
             "Cache-Control": "no-cache",
@@ -111,15 +118,68 @@ class EpluconApi:
         _LOGGER.debug("Fetching zones for %s: %s", module_id, url)
 
         async with self._session.get(url, headers=self._headers) as response:
-            data = await response.json()
+            status = response.status
+            # This is the first endpoint with a documented non-200 path, and
+            # the error body's content type isn't documented, so don't let
+            # aiohttp reject it before we can read the message out of it.
+            try:
+                data = await response.json(content_type=None)
+            except (aiohttp.ClientError, ValueError):
+                data = None
 
-        _LOGGER.debug("Zones raw response for %s: %s", module_id, data)
+        _LOGGER.debug(
+            "Zones raw response for %s (HTTP %s): %s", module_id, status, data
+        )
+
+        message = data.get("message") if isinstance(data, dict) else None
+        error_code = self._error_code(data)
+
+        # A 406 is permanent: this module will never have zones. Retrying it
+        # or failing the whole coordinator refresh over it would both be
+        # disproportionate, so report "no zones" and warn once.
+        if HTTP_NOT_ACCEPTABLE in (status, error_code):
+            if module_id not in self._not_a_zone_controller:
+                self._not_a_zone_controller.add(module_id)
+                _LOGGER.warning(
+                    "Eplucon module %s does not expose zones, no zone entities "
+                    "will be created for it: %s",
+                    module_id,
+                    message or f"HTTP {HTTP_NOT_ACCEPTABLE} from {url}",
+                )
+            return []
+
+        if status != 200:
+            if status in (401, 403):
+                raise ApiAuthError(
+                    f"Not authorized to read zones of module {module_id} "
+                    f"(HTTP {status})"
+                )
+            raise ApiError(
+                f"Zones request for module {module_id} failed with HTTP {status}"
+                + (f": {message}" if message else "")
+            )
+
         self._validate_response(data)
 
+        if error_code is not None and error_code != 200:
+            raise ApiError(
+                f"Zones request for module {module_id} returned error_code "
+                f"{error_code}" + (f": {message}" if message else "")
+            )
+
+        items = data.get("data")
+        if not isinstance(items, list):
+            raise ApiError(
+                f"Zones response for module {module_id} has no 'data' list: {items!r}"
+            )
+
         zones: list[ZoneDTO] = []
-        for item in data.get("data", []):
+        for item in items:
             try:
                 zones.append(self._parse_zone(item))
+            except ValueError as err:
+                # An entry we can't identify; no stacktrace needed for it.
+                _LOGGER.warning("Skipping unusable zone entry: %s", err)
             except Exception:
                 _LOGGER.exception("Failed to parse zone DTO: %s", item)
 
@@ -127,10 +187,44 @@ class EpluconApi:
         return zones
 
     @staticmethod
+    def _error_code(data: Any) -> int | None:
+        """Return the response's error_code as an int, or None if unusable."""
+        if not isinstance(data, dict):
+            return None
+
+        raw = data.get("error_code")
+        if raw is None:
+            return None
+
+        try:
+            return int(raw)
+        except (TypeError, ValueError):
+            return None
+
+    @staticmethod
     def _parse_zone(item: dict) -> ZoneDTO:
-        """Build a ZoneDTO from one /zones entry, enriching from raw_data."""
+        """Build a ZoneDTO from one /zones entry, enriching from raw_data.
+
+        Raises ValueError for an entry that cannot be identified; anything the
+        enrichment step can't make sense of is left as None rather than losing
+        the top-level fields with it.
+        """
+        if not isinstance(item, dict):
+            raise ValueError(f"zone entry is not an object: {item!r}")
+
+        raw_id = item.get("id")
+        if raw_id is None:
+            raise ValueError(f"zone entry has no id: {item}")
+
+        try:
+            zone_id = int(raw_id)
+        except (TypeError, ValueError):
+            raise ValueError(
+                f"zone entry has a non-numeric id {raw_id!r}: {item}"
+            ) from None
+
         zone = ZoneDTO(
-            id=int(item["id"]),
+            id=zone_id,
             name=item.get("name"),
             mode=item.get("mode"),
             set_temperature=item.get("set_temperature"),
@@ -147,8 +241,15 @@ class EpluconApi:
             _LOGGER.debug("Zone %s has unparseable raw_data", zone.id)
             return zone
 
-        z = parsed.get("zone", {}) if isinstance(parsed, dict) else {}
-        flags = z.get("flags", {}) if isinstance(z, dict) else {}
+        # Both keys can be present with a JSON null, so a `.get(key, {})`
+        # default is not enough: check what actually came back.
+        z = parsed.get("zone") if isinstance(parsed, dict) else None
+        if not isinstance(z, dict):
+            z = {}
+
+        flags = z.get("flags")
+        if not isinstance(flags, dict):
+            flags = {}
 
         zone.humidity = z.get("humidity")
         zone.battery_level = z.get("batteryLevel")
