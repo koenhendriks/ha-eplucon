@@ -10,6 +10,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 * Support for `zones_system_controller` modules (th-TOUCH). Each regulation zone / control panel is exposed as its own Home Assistant device with read-only sensors: current temperature, target temperature, humidity, battery, signal strength, mode and regulation direction, plus a "Call for Heat" binary sensor. Zone entities are named after their zone (`sensor.woonkamer_temperature`), and become unavailable when the zone drops out of the API rather than reporting a stale value. The target temperature cannot be updated within Home Assistant yet.
 * Tests for the zones endpoint: `raw_data` parsing, the documented HTTP 406 path, and zone entity naming and availability.
 
+### Fixed
+* Hassfest validation failed because the config flow description had the API token URL written inline in `strings.json`. The URL is now supplied as a `description_placeholders` value, which is what hassfest asks for. The text shown when setting up the integration is unchanged.
+
 ## [1.5.1](https://github.com/koenhendriks/ha-eplucon/releases/1.5.1) - 2026-01-27
 
 ### Fixed

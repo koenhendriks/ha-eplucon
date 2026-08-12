@@ -4,7 +4,7 @@
         "step": {
             "user": {
                 "title": "Connect to Eplucon",
-                "description": "Please enter your API token to connect to Eplucon (https://portaal.eplucon.nl/account/api_tokens).",
+                "description": "Please enter your API token to connect to Eplucon ({api_tokens_url}).",
                 "data_description": {
                     "api_endpoint": "Override the default API endpoint (optional)"
                 },

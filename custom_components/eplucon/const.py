@@ -32,6 +32,9 @@ DOMAIN = "eplucon"
 MANUFACTURER = "Eplucon"
 PLATFORMS = ["sensor", "binary_sensor"]
 EPLUCON_PORTAL_URL = "https://portaal.eplucon.nl/"
+# Passed to the config flow as a description placeholder; hassfest rejects a
+# URL written inline in strings.json.
+EPLUCON_API_TOKENS_URL = "https://portaal.eplucon.nl/account/api_tokens"
 
 # Module types this integration knows how to handle.
 HEAT_PUMP_TYPES = ["heat_pump"]

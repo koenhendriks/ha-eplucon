@@ -5,7 +5,7 @@ from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.helpers import aiohttp_client
 from homeassistant.data_entry_flow import FlowResult
-from .const import DOMAIN, SUPPORTED_TYPES
+from .const import DOMAIN, SUPPORTED_TYPES, EPLUCON_API_TOKENS_URL
 from .eplucon_api.eplucon_client import EpluconApi, ApiAuthError, ApiError, BASE_URL
 
 _LOGGER = logging.getLogger(__name__)
@@ -70,6 +70,7 @@ class EpluconConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="user",
             data_schema=DATA_SCHEMA,
             errors=errors,
+            description_placeholders={"api_tokens_url": EPLUCON_API_TOKENS_URL},
         )
 
     @staticmethod
