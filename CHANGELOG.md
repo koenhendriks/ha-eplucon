@@ -6,9 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.6.0](https://github.com/koenhendriks/ha-eplucon/releases/1.6.0) - 2026-08-12
+
+Big thanks to [@knz](https://github.com/knz) for this release.
+
 ### Added
-* Support for `zones_system_controller` modules (th-TOUCH). Each regulation zone / control panel is exposed as its own Home Assistant device with read-only sensors: current temperature, target temperature, humidity, battery, signal strength, mode and regulation direction, plus a "Call for Heat" binary sensor. Zone entities are named after their zone (`sensor.woonkamer_temperature`), and become unavailable when the zone drops out of the API rather than reporting a stale value. The target temperature cannot be updated within Home Assistant yet.
-* Tests for the zones endpoint: `raw_data` parsing, the documented HTTP 406 path, and zone entity naming and availability.
+* ([#36](https://github.com/koenhendriks/ha-eplucon/pull/36)) Support for `zones_system_controller` modules (th-TOUCH). Each regulation zone / control panel is exposed as its own Home Assistant device with read-only sensors: current temperature, target temperature, humidity, battery, signal strength, mode and regulation direction, plus a "Call for Heat" binary sensor. Zone entities are named after their zone (`sensor.woonkamer_temperature`), and become unavailable when the zone drops out of the API rather than reporting a stale value. Related to ([#28](https://github.com/koenhendriks/ha-eplucon/issues/28)), though note the target temperature still cannot be changed from Home Assistant, because the public API does not expose a way to set it. By [@knz](https://github.com/knz)
+* ([#36](https://github.com/koenhendriks/ha-eplucon/pull/36)) Documentation of the zones API in `docs/zones-api.md` by [@knz](https://github.com/knz)
+* ([#36](https://github.com/koenhendriks/ha-eplucon/pull/36)) Tests for the zones endpoint: `raw_data` parsing, the documented HTTP 406 path, and zone entity naming and availability by [@knz](https://github.com/knz)
+* pytest now runs in CI, so the test suite gates pushes and pull requests alongside the existing HACS and hassfest validation.
 
 ### Fixed
 * Hassfest validation failed because the config flow description had the API token URL written inline in `strings.json`. The URL is now supplied as a `description_placeholders` value, which is what hassfest asks for. The text shown when setting up the integration is unchanged.
