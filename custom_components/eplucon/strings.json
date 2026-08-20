@@ -11,6 +11,18 @@
                 "data": {
                     "api_token": "API Token",
                     "api_endpoint": "API Endpoint"
+                },
+                "sections": {
+                    "developer_options": {
+                        "name": "Developer tools",
+                        "description": "Only needed when working on this integration.",
+                        "data": {
+                            "use_mock_data": "Use mock data"
+                        },
+                        "data_description": {
+                            "use_mock_data": "Read every value from the mock files bundled with the integration instead of the Eplucon API. No request is sent and the API token is ignored."
+                        }
+                    }
                 }
             }
         },
@@ -35,6 +47,18 @@
                 "data": {
                     "api_token": "API Token",
                     "api_endpoint": "API Endpoint"
+                },
+                "sections": {
+                    "developer_options": {
+                        "name": "Developer tools",
+                        "description": "Only needed when working on this integration.",
+                        "data": {
+                            "use_mock_data": "Use mock data"
+                        },
+                        "data_description": {
+                            "use_mock_data": "Read every value from the mock files bundled with the integration instead of the Eplucon API. No request is sent and the API token is ignored."
+                        }
+                    }
                 }
             }
         },

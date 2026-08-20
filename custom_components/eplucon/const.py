@@ -36,6 +36,14 @@ EPLUCON_PORTAL_URL = "https://portaal.eplucon.nl/"
 # URL written inline in strings.json.
 EPLUCON_API_TOKENS_URL = "https://portaal.eplucon.nl/account/api_tokens"
 
+# Config entry keys. The developer options live in their own collapsed
+# section of the config flow; `CONF_DEVELOPER_OPTIONS` is the section key the
+# frontend nests them under, and they are flattened into the entry data.
+CONF_API_TOKEN = "api_token"
+CONF_API_ENDPOINT = "api_endpoint"
+CONF_DEVELOPER_OPTIONS = "developer_options"
+CONF_USE_MOCK_DATA = "use_mock_data"
+
 # Module types this integration knows how to handle.
 HEAT_PUMP_TYPES = ["heat_pump"]
 ZONE_CONTROLLER_TYPES = ["zones_system_controller"]

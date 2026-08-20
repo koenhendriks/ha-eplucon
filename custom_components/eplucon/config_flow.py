@@ -4,17 +4,55 @@ from typing import Any, Dict, Optional
 from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.helpers import aiohttp_client
-from homeassistant.data_entry_flow import FlowResult
-from .const import DOMAIN, SUPPORTED_TYPES, EPLUCON_API_TOKENS_URL
+from homeassistant.data_entry_flow import FlowResult, section
+from .const import (
+    DOMAIN,
+    SUPPORTED_TYPES,
+    EPLUCON_API_TOKENS_URL,
+    CONF_API_TOKEN,
+    CONF_API_ENDPOINT,
+    CONF_DEVELOPER_OPTIONS,
+    CONF_USE_MOCK_DATA,
+)
 from .eplucon_api.eplucon_client import EpluconApi, ApiAuthError, ApiError, BASE_URL
 
 _LOGGER = logging.getLogger(__name__)
 
-# Define the schema for the user input (API token)
-DATA_SCHEMA = vol.Schema({
-    vol.Required("api_token"): str,
-    vol.Required("api_endpoint", default=BASE_URL): str
-})
+
+def build_schema(
+    api_token: Optional[str] = None,
+    api_endpoint: str = BASE_URL,
+    use_mock_data: bool = False,
+) -> vol.Schema:
+    """Build the form schema shared by the setup step and the options step.
+
+    The mock switch sits in its own collapsed "Developer tools" section rather
+    than being a magic API endpoint: a fake host still has to resolve in DNS,
+    so it could never be reached. The section is shown expanded once mock data
+    is on, so it can't be left enabled unnoticed.
+    """
+    api_token_key = (
+        vol.Required(CONF_API_TOKEN)
+        if api_token is None
+        else vol.Required(CONF_API_TOKEN, default=api_token)
+    )
+
+    return vol.Schema({
+        api_token_key: str,
+        vol.Required(CONF_API_ENDPOINT, default=api_endpoint): str,
+        vol.Required(CONF_DEVELOPER_OPTIONS): section(
+            vol.Schema({
+                vol.Required(CONF_USE_MOCK_DATA, default=use_mock_data): bool,
+            }),
+            {"collapsed": not use_mock_data},
+        ),
+    })
+
+
+def read_use_mock_data(user_input: Dict[str, Any]) -> bool:
+    """Read the mock switch out of the developer options section."""
+    developer_options = user_input.get(CONF_DEVELOPER_OPTIONS) or {}
+    return bool(developer_options.get(CONF_USE_MOCK_DATA, False))
 
 
 class EpluconConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -25,14 +63,23 @@ class EpluconConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_user(self, user_input: Optional[Dict[str, Any]] = None) -> FlowResult:
         """Handle the initial step."""
         errors: Dict[str, str] = {}
+        api_token: Optional[str] = None
+        api_endpoint: str = BASE_URL
+        use_mock_data = False
 
         _LOGGER.debug("Starting Eplucon config flow")
 
         if user_input is not None:
             # Attempt to connect to the API using the provided API token & endpoint
-            api_token: str = user_input["api_token"]
-            api_endpoint: str = user_input['api_endpoint']
-            client = EpluconApi(api_token, api_endpoint, aiohttp_client.async_get_clientsession(self.hass))
+            api_token = user_input[CONF_API_TOKEN]
+            api_endpoint = user_input[CONF_API_ENDPOINT]
+            use_mock_data = read_use_mock_data(user_input)
+            client = EpluconApi(
+                api_token,
+                api_endpoint,
+                aiohttp_client.async_get_clientsession(self.hass),
+                use_mock_data=use_mock_data,
+            )
 
             try:
                 devices = await client.get_devices()
@@ -46,7 +93,12 @@ class EpluconConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         devices.remove(device)
 
                 if len(devices) > 0:
-                    return self.async_create_entry(title="Eplucon", data={"devices": devices, "api_token": api_token, "api_endpoint": api_endpoint})
+                    return self.async_create_entry(title="Eplucon", data={
+                        "devices": devices,
+                        CONF_API_TOKEN: api_token,
+                        CONF_API_ENDPOINT: api_endpoint,
+                        CONF_USE_MOCK_DATA: use_mock_data,
+                    })
 
                 errors["base"] = "no-devices"
 
@@ -68,7 +120,7 @@ class EpluconConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         # If the user input is not valid or an error occurred, show the form again with the error message
         return self.async_show_form(
             step_id="user",
-            data_schema=DATA_SCHEMA,
+            data_schema=build_schema(api_token, api_endpoint, use_mock_data),
             errors=errors,
             description_placeholders={"api_tokens_url": EPLUCON_API_TOKENS_URL},
         )
@@ -91,14 +143,24 @@ class EpluconOptionsFlowHandler(config_entries.OptionsFlow):
     async def async_step_init(self, user_input: Optional[Dict[str, Any]] = None) -> FlowResult:
         """Manage the options for the integration."""
         errors: Dict[str, str] = {}
+        entry_data = self._config_entry.data
+        api_token = entry_data.get(CONF_API_TOKEN)
+        api_endpoint = entry_data.get(CONF_API_ENDPOINT, BASE_URL)
+        use_mock_data = entry_data.get(CONF_USE_MOCK_DATA, False)
 
         if user_input is not None:
             # If the user has provided new data, update the config entry
-            api_token = user_input.get("api_token")
-            api_endpoint = user_input.get("api_endpoint")
+            api_token = user_input.get(CONF_API_TOKEN)
+            api_endpoint = user_input.get(CONF_API_ENDPOINT, BASE_URL)
+            use_mock_data = read_use_mock_data(user_input)
 
             # Revalidate the API token to ensure it's correct
-            client = EpluconApi(api_token, api_endpoint, aiohttp_client.async_get_clientsession(self.hass))
+            client = EpluconApi(
+                api_token,
+                api_endpoint,
+                aiohttp_client.async_get_clientsession(self.hass),
+                use_mock_data=use_mock_data,
+            )
 
             try:
                 devices = await client.get_devices()
@@ -113,12 +175,17 @@ class EpluconOptionsFlowHandler(config_entries.OptionsFlow):
                         devices.remove(device)
 
                 if len(devices) > 0:
-                    # Update the configuration entry with the new API token and devices
+                    # Update the configuration entry with the new API token and devices.
+                    # Keep the rest of the entry data: dropping the endpoint or the
+                    # mock switch here would silently reset them on every save.
                     self.hass.config_entries.async_update_entry(
                         self._config_entry,
                         data={
-                            "api_token": api_token,
-                            "devices": devices
+                            **entry_data,
+                            CONF_API_TOKEN: api_token,
+                            CONF_API_ENDPOINT: api_endpoint,
+                            CONF_USE_MOCK_DATA: use_mock_data,
+                            "devices": devices,
                         }
                     )
                     return self.async_create_entry(title="", data={})
@@ -143,10 +210,6 @@ class EpluconOptionsFlowHandler(config_entries.OptionsFlow):
         # Show the options form with the current API token as the default value
         return self.async_show_form(
             step_id="init",
-            data_schema=vol.Schema({
-                vol.Required("api_token", default=self._config_entry.data.get("api_token")): str,
-                vol.Required("api_endpoint", default=self._config_entry.data.get("api_endpoint", BASE_URL)): str
-            }),
+            data_schema=build_schema(api_token, api_endpoint, use_mock_data),
             errors=errors
         )
-

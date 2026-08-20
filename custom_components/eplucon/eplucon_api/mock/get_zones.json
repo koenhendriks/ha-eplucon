@@ -1,0 +1,46 @@
+{
+    "auth": true,
+    "data": [
+        {
+            "id": 3221,
+            "name": "Zone 1",
+            "set_temperature": 24,
+            "mode": "constantTemp",
+            "raw_data": "{\"zone\":{\"id\":110,\"parentId\":99,\"time\":\"2026-08-20T08:01:17.084197\",\"duringChange\":false,\"index\":9,\"currentTemperature\":232,\"setTemperature\":240,\"flags\":{\"relayState\":\"off\",\"minOneWindowOpen\":false,\"algorithm\":\"cooling\",\"floorSensor\":0,\"humidityAlgorytm\":0,\"zoneExcluded\":0},\"zoneState\":\"noAlarm\",\"signalStrength\":null,\"batteryLevel\":null,\"actuatorsOpen\":0,\"humidity\":null,\"visibility\":true},\"description\":{\"id\":210,\"parentId\":110,\"name\":\"Zone 1\",\"styleId\":4,\"styleIcon\":\"bedroom\",\"duringChange\":false},\"mode\":{\"id\":491,\"parentId\":110,\"mode\":\"constantTemp\",\"constTempTime\":60,\"setTemperature\":240,\"scheduleIndex\":0},\"schedule\":{\"id\":310,\"parentId\":110,\"index\":-2,\"p0Days\":[\"1\",\"1\",\"1\",\"1\",\"1\",\"0\",\"0\"],\"p0Intervals\":[{\"start\":300,\"stop\":600,\"temp\":240},{\"start\":660,\"stop\":1380,\"temp\":240},{\"start\":6100,\"stop\":6100,\"temp\":200}],\"p0SetbackTemp\":260,\"p1Days\":[\"0\",\"0\",\"0\",\"0\",\"0\",\"1\",\"1\"],\"p1Intervals\":[{\"start\":6100,\"stop\":6100,\"temp\":200},{\"start\":6100,\"stop\":6100,\"temp\":200},{\"start\":6100,\"stop\":6100,\"temp\":200}],\"p1SetbackTemp\":150},\"actuators\":[],\"underfloor\":{},\"windowsSensors\":[],\"additionalContacts\":[],\"color\":\"#ffa614\"}",
+            "current_temperature": 23.2
+        },
+        {
+            "id": 3222,
+            "name": "Zone 2",
+            "set_temperature": 24,
+            "mode": "constantTemp",
+            "raw_data": "{\"zone\":{\"id\":111,\"parentId\":99,\"time\":\"2026-08-20T08:17:47.165214\",\"duringChange\":false,\"index\":10,\"currentTemperature\":232,\"setTemperature\":240,\"flags\":{\"relayState\":\"off\",\"minOneWindowOpen\":false,\"algorithm\":\"cooling\",\"floorSensor\":0,\"humidityAlgorytm\":0,\"zoneExcluded\":0},\"zoneState\":\"noAlarm\",\"signalStrength\":null,\"batteryLevel\":null,\"actuatorsOpen\":0,\"humidity\":null,\"visibility\":true},\"description\":{\"id\":211,\"parentId\":111,\"name\":\"Zone 2\",\"styleId\":4,\"styleIcon\":\"bedroom\",\"duringChange\":false},\"mode\":{\"id\":501,\"parentId\":111,\"mode\":\"constantTemp\",\"constTempTime\":60,\"setTemperature\":240,\"scheduleIndex\":0},\"schedule\":{\"id\":311,\"parentId\":111,\"index\":-3,\"p0Days\":[\"1\",\"1\",\"1\",\"1\",\"1\",\"0\",\"0\"],\"p0Intervals\":[{\"start\":300,\"stop\":600,\"temp\":240},{\"start\":660,\"stop\":1380,\"temp\":240},{\"start\":6100,\"stop\":6100,\"temp\":200}],\"p0SetbackTemp\":260,\"p1Days\":[\"0\",\"0\",\"0\",\"0\",\"0\",\"1\",\"1\"],\"p1Intervals\":[{\"start\":6100,\"stop\":6100,\"temp\":200},{\"start\":6100,\"stop\":6100,\"temp\":200},{\"start\":6100,\"stop\":6100,\"temp\":200}],\"p1SetbackTemp\":150},\"actuators\":[],\"underfloor\":{},\"windowsSensors\":[],\"additionalContacts\":[],\"color\":\"#183981\"}",
+            "current_temperature": 23.2
+        },
+        {
+            "id": 3223,
+            "name": "Zone 3",
+            "set_temperature": 24,
+            "mode": "constantTemp",
+            "raw_data": "{\"zone\":{\"id\":112,\"parentId\":99,\"time\":\"2026-08-20T08:24:28.954102\",\"duringChange\":false,\"index\":11,\"currentTemperature\":229,\"setTemperature\":240,\"flags\":{\"relayState\":\"off\",\"minOneWindowOpen\":false,\"algorithm\":\"cooling\",\"floorSensor\":0,\"humidityAlgorytm\":0,\"zoneExcluded\":0},\"zoneState\":\"noAlarm\",\"signalStrength\":null,\"batteryLevel\":null,\"actuatorsOpen\":0,\"humidity\":null,\"visibility\":true},\"description\":{\"id\":212,\"parentId\":112,\"name\":\"Zone 3\",\"styleId\":1,\"styleIcon\":\"bathroom\",\"duringChange\":false},\"mode\":{\"id\":511,\"parentId\":112,\"mode\":\"constantTemp\",\"constTempTime\":60,\"setTemperature\":240,\"scheduleIndex\":0},\"schedule\":{\"id\":312,\"parentId\":112,\"index\":-4,\"p0Days\":[\"1\",\"1\",\"1\",\"1\",\"1\",\"0\",\"0\"],\"p0Intervals\":[{\"start\":300,\"stop\":600,\"temp\":240},{\"start\":660,\"stop\":1380,\"temp\":240},{\"start\":6100,\"stop\":6100,\"temp\":200}],\"p0SetbackTemp\":260,\"p1Days\":[\"0\",\"0\",\"0\",\"0\",\"0\",\"1\",\"1\"],\"p1Intervals\":[{\"start\":6100,\"stop\":6100,\"temp\":200},{\"start\":6100,\"stop\":6100,\"temp\":200},{\"start\":6100,\"stop\":6100,\"temp\":200}],\"p1SetbackTemp\":150},\"actuators\":[],\"underfloor\":{},\"windowsSensors\":[],\"additionalContacts\":[],\"color\":\"#81cca8\"}",
+            "current_temperature": 22.9
+        },
+        {
+            "id": 3224,
+            "name": "Zone 4",
+            "set_temperature": 24.5,
+            "mode": "constantTemp",
+            "raw_data": "{\"zone\":{\"id\":114,\"parentId\":99,\"time\":\"2026-08-20T08:30:08.939541\",\"duringChange\":false,\"index\":13,\"currentTemperature\":236,\"setTemperature\":245,\"flags\":{\"relayState\":\"off\",\"minOneWindowOpen\":false,\"algorithm\":\"cooling\",\"floorSensor\":0,\"humidityAlgorytm\":0,\"zoneExcluded\":0},\"zoneState\":\"noAlarm\",\"signalStrength\":null,\"batteryLevel\":null,\"actuatorsOpen\":0,\"humidity\":null,\"visibility\":true},\"description\":{\"id\":214,\"parentId\":114,\"name\":\"Zone 4\",\"styleId\":4,\"styleIcon\":\"bedroom\",\"duringChange\":false},\"mode\":{\"id\":531,\"parentId\":114,\"mode\":\"constantTemp\",\"constTempTime\":60,\"setTemperature\":245,\"scheduleIndex\":0},\"schedule\":{\"id\":314,\"parentId\":114,\"index\":-6,\"p0Days\":[\"1\",\"1\",\"1\",\"1\",\"1\",\"0\",\"0\"],\"p0Intervals\":[{\"start\":300,\"stop\":600,\"temp\":240},{\"start\":660,\"stop\":1380,\"temp\":240},{\"start\":6100,\"stop\":6100,\"temp\":200}],\"p0SetbackTemp\":260,\"p1Days\":[\"0\",\"0\",\"0\",\"0\",\"0\",\"1\",\"1\"],\"p1Intervals\":[{\"start\":6100,\"stop\":6100,\"temp\":200},{\"start\":6100,\"stop\":6100,\"temp\":200},{\"start\":6100,\"stop\":6100,\"temp\":200}],\"p1SetbackTemp\":150},\"actuators\":[],\"underfloor\":{},\"windowsSensors\":[],\"additionalContacts\":[],\"color\":\"#f77435\"}",
+            "current_temperature": 23.6
+        },
+        {
+            "id": 3225,
+            "name": "Zone 5",
+            "set_temperature": 24,
+            "mode": "constantTemp",
+            "raw_data": "{\"zone\":{\"id\":115,\"parentId\":99,\"time\":\"2026-08-20T08:22:41.603195\",\"duringChange\":false,\"index\":14,\"currentTemperature\":232,\"setTemperature\":240,\"flags\":{\"relayState\":\"off\",\"minOneWindowOpen\":false,\"algorithm\":\"cooling\",\"floorSensor\":0,\"humidityAlgorytm\":0,\"zoneExcluded\":0},\"zoneState\":\"noAlarm\",\"signalStrength\":null,\"batteryLevel\":null,\"actuatorsOpen\":0,\"humidity\":null,\"visibility\":true},\"description\":{\"id\":215,\"parentId\":115,\"name\":\"Zone 5\",\"styleId\":4,\"styleIcon\":\"bedroom\",\"duringChange\":false},\"mode\":{\"id\":541,\"parentId\":115,\"mode\":\"constantTemp\",\"constTempTime\":60,\"setTemperature\":240,\"scheduleIndex\":0},\"schedule\":{\"id\":315,\"parentId\":115,\"index\":-7,\"p0Days\":[\"1\",\"1\",\"1\",\"1\",\"1\",\"0\",\"0\"],\"p0Intervals\":[{\"start\":300,\"stop\":600,\"temp\":240},{\"start\":660,\"stop\":1380,\"temp\":240},{\"start\":6100,\"stop\":6100,\"temp\":200}],\"p0SetbackTemp\":260,\"p1Days\":[\"0\",\"0\",\"0\",\"0\",\"0\",\"1\",\"1\"],\"p1Intervals\":[{\"start\":6100,\"stop\":6100,\"temp\":200},{\"start\":6100,\"stop\":6100,\"temp\":200},{\"start\":6100,\"stop\":6100,\"temp\":200}],\"p1SetbackTemp\":150},\"actuators\":[],\"underfloor\":{},\"windowsSensors\":[],\"additionalContacts\":[],\"color\":\"#6c31c0\"}",
+            "current_temperature": 23.2
+        }
+    ],
+    "error_code": 200
+}

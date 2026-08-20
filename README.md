@@ -94,6 +94,38 @@ If you encounter any issues, check the Home Assistant logs for errors related to
 
 Make sure to enable debug logging for this integration which can be toggled under **Settings** > **Devices & Services** > **Eplucon**.
 
+## Development
+
+### Mock data
+
+Under **Developer tools** in the integration's setup and options dialog there is
+a **Use mock data** switch. With it on, every value comes from the JSON fixtures
+in `custom_components/eplucon/eplucon_api/mock/` instead of the Eplucon API: no
+request is sent, the API token is ignored, and the API endpoint is left alone
+(pointing it at a fake host only produces a DNS error). The mock account holds
+one heat pump and one zone controller with five zones, so every entity type can
+be worked on without a real installation. A warning is logged on every start
+while the switch is on, and the section stays expanded so it can't be left
+enabled unnoticed.
+
+Each endpoint reads one fixture:
+
+| Endpoint | Fixture |
+| --- | --- |
+| `/econtrol/modules` | `get_devices.json` |
+| `/econtrol/modules/{id}/get_realtime_info` | `get_realtime_info.json` |
+| `/econtrol/modules/{id}/heatloading_status` | `get_heatloading_status.json` |
+| `/econtrol/modules/{id}/zones` | `get_zones.json` |
+
+Fixtures are re-read on every refresh, so editing one shows up in Home Assistant
+within the next update interval — no restart needed. Two optional extras help
+model a less tidy account:
+
+- **Per-module fixtures:** `get_zones.1007331.json` is used for module `1007331`
+  and takes precedence over `get_zones.json`.
+- **Non-200 responses:** add `"http_status": 406` to a fixture to mock an error
+  response, for example a module that is not a zone controller.
+
 ## Contributing
 
 Contributions are welcome! If you'd like to contribute to this integration, please fork the repository and submit a pull request. Be sure to follow the existing coding style and add appropriate tests.

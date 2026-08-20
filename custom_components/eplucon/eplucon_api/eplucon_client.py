@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import aiohttp
+import asyncio
 import json
 import logging
+from pathlib import Path
 from typing import Any
 
 from .DTO.CommonInfoDTO import CommonInfoDTO
@@ -12,6 +14,11 @@ from .DTO.HeatLoadingDTO import HeatLoadingDTO
 from .DTO.ZoneDTO import ZoneDTO
 
 BASE_URL = "https://portaal.eplucon.nl/api/v2"
+
+# Fixtures served instead of the portal when the client is mocked. Enabled
+# through the "Developer tools" section of the config flow, never by URL: a
+# mock endpoint would still have to resolve in DNS. See README "Mock data".
+MOCK_DIR = Path(__file__).parent / "mock"
 
 # The zones endpoint answers 406 "Account is not a zone-controller" for a
 # module that has no zones. See docs/zones-api.md section 2.
@@ -36,10 +43,12 @@ class EpluconApi:
         api_token: str,
         api_endpoint: str | None = None,
         session: aiohttp.ClientSession | None = None,
+        use_mock_data: bool = False,
     ) -> None:
-        self._base = api_endpoint or BASE_URL
+        self._base = (api_endpoint or BASE_URL).rstrip("/")
+        self._mock = use_mock_data
 
-        if session is None:
+        if session is None and not self._mock:
             raise RuntimeError("aiohttp ClientSession is required")
 
         self._session = session
@@ -52,19 +61,100 @@ class EpluconApi:
             "Authorization": f"Bearer {api_token}",
         }
 
+        if self._mock:
+            _LOGGER.warning(
+                "Eplucon mock data is enabled: no request will reach the "
+                "portal, all data is read from %s. Turn this off under "
+                "Developer tools in the integration options.",
+                MOCK_DIR,
+            )
+
         _LOGGER.debug(
-            "Initialized Eplucon API client (endpoint=%s)",
+            "Initialized Eplucon API client (endpoint=%s, mock=%s)",
             self._base,
+            self._mock,
         )
 
+    async def _request(
+        self, url: str, fixture: str, module_id: int | None = None
+    ) -> tuple[int, Any]:
+        """GET `url`, or read `fixture` from ./mock when the endpoint is mocked.
 
+        Returns the HTTP status and the decoded body. A body that isn't JSON
+        comes back as None instead of raising, so callers can report the
+        status and message themselves.
+        """
+        if self._mock:
+            return await self._read_fixture(fixture, module_id)
+
+        async with self._session.get(url, headers=self._headers) as response:
+            status = response.status
+            # Error bodies have no documented content type, so don't let
+            # aiohttp reject one before we can read the message out of it.
+            try:
+                data = await response.json(content_type=None)
+            except (aiohttp.ClientError, ValueError):
+                data = None
+
+        return status, data
+
+    @staticmethod
+    async def _read_fixture(
+        fixture: str, module_id: int | None = None
+    ) -> tuple[int, Any]:
+        """Load a mock response from ./mock.
+
+        A per-module file (`get_zones.1007331.json`) wins over the shared
+        `get_zones.json`, so one mock account can hold modules that answer
+        differently. Fixtures are read on every call, so editing one takes
+        effect on the next coordinator refresh without a restart.
+
+        A fixture may carry an `http_status` key to mock a non-200 response;
+        it is stripped before the body is handed back.
+        """
+        candidates = []
+        if module_id is not None:
+            candidates.append(MOCK_DIR / f"{fixture}.{module_id}.json")
+        candidates.append(MOCK_DIR / f"{fixture}.json")
+
+        path = next((c for c in candidates if c.is_file()), None)
+        if path is None:
+            raise ApiError(
+                f"No mock fixture for {fixture}, expected one of: "
+                + ", ".join(str(c) for c in candidates)
+            )
+
+        loop = asyncio.get_running_loop()
+        try:
+            raw = await loop.run_in_executor(None, path.read_text, "utf-8")
+        except OSError as err:
+            raise ApiError(f"Could not read mock fixture {path}: {err}") from err
+
+        try:
+            data = json.loads(raw)
+        except ValueError as err:
+            raise ApiError(f"Mock fixture {path} is not valid JSON: {err}") from err
+
+        status = 200
+        if isinstance(data, dict) and "http_status" in data:
+            data = dict(data)
+            raw_status = data.pop("http_status")
+            try:
+                status = int(raw_status)
+            except (TypeError, ValueError):
+                raise ApiError(
+                    f"Mock fixture {path} has a non-numeric http_status "
+                    f"{raw_status!r}"
+                ) from None
+
+        _LOGGER.debug("Serving mocked response from %s (HTTP %s)", path, status)
+        return status, data
 
     async def get_devices(self) -> list[DeviceDTO]:
         url = f"{self._base}/econtrol/modules"
         _LOGGER.debug("Fetching devices list: %s", url)
 
-        async with self._session.get(url, headers=self._headers) as response:
-            data = await response.json()
+        _, data = await self._request(url, "get_devices")
 
         _LOGGER.debug("Devices raw response: %s", data)
         self._validate_response(data)
@@ -85,8 +175,7 @@ class EpluconApi:
         url = f"{self._base}/econtrol/modules/{module_id}/get_realtime_info"
         _LOGGER.debug("Fetching realtime info for %s: %s", module_id, url)
 
-        async with self._session.get(url, headers=self._headers) as response:
-            data = await response.json()
+        _, data = await self._request(url, "get_realtime_info", module_id)
 
         _LOGGER.debug("Realtime raw response for %s: %s", module_id, data)
         self._validate_response(data)
@@ -100,8 +189,7 @@ class EpluconApi:
         url = f"{self._base}/econtrol/modules/{module_id}/heatloading_status"
         _LOGGER.debug("Fetching heatloading status for %s: %s", module_id, url)
 
-        async with self._session.get(url, headers=self._headers) as response:
-            data = await response.json()
+        _, data = await self._request(url, "get_heatloading_status", module_id)
 
         _LOGGER.debug("Heatloading raw response for %s: %s", module_id, data)
         self._validate_response(data)
@@ -117,15 +205,7 @@ class EpluconApi:
         url = f"{self._base}/econtrol/modules/{module_id}/zones"
         _LOGGER.debug("Fetching zones for %s: %s", module_id, url)
 
-        async with self._session.get(url, headers=self._headers) as response:
-            status = response.status
-            # This is the first endpoint with a documented non-200 path, and
-            # the error body's content type isn't documented, so don't let
-            # aiohttp reject it before we can read the message out of it.
-            try:
-                data = await response.json(content_type=None)
-            except (aiohttp.ClientError, ValueError):
-                data = None
+        status, data = await self._request(url, "get_zones", module_id)
 
         _LOGGER.debug(
             "Zones raw response for %s (HTTP %s): %s", module_id, status, data

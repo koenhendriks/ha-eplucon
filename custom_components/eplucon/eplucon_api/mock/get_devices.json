@@ -1,0 +1,17 @@
+{
+  "auth": true,
+  "data": [
+    {
+      "id": 1001337,
+      "account_module_index": "1aa111a1a1a111a1aa1111111aa11a11",
+      "name": "Mock Heatpump",
+      "type": "heat_pump"
+    }, {
+      "id": 1007331,
+      "account_module_index": "2aa222a2a2a222a2aa2222222aa22a22",
+      "name": "Mock Tech controller",
+      "type": "zones_system_controller"
+    }
+  ],
+  "error_code": 200
+}

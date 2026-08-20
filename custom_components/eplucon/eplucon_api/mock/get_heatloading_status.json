@@ -1,0 +1,11 @@
+{
+  "auth": true,
+  "data": {
+    "heatloading_active": false,
+    "configurations": {
+      "domestic_hot_water": false,
+      "heatloading_for_heating": false
+    }
+  },
+  "error_code": 200
+}

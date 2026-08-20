@@ -23,6 +23,9 @@ from .const import (
     SUPPORTED_TYPES,
     HEAT_PUMP_TYPES,
     ZONE_CONTROLLER_TYPES,
+    CONF_API_TOKEN,
+    CONF_API_ENDPOINT,
+    CONF_USE_MOCK_DATA,
 )
 from .eplucon_api.eplucon_client import (
     EpluconApi,
@@ -34,6 +37,11 @@ from .eplucon_api.eplucon_client import (
 _LOGGER = logging.getLogger(__name__)
 
 UPDATE_INTERVAL = timedelta(seconds=30)
+
+# Mock data was briefly selected by pointing the API endpoint at this host,
+# which could only ever fail: the host does not resolve. Entries still holding
+# it are moved over to the developer options switch at setup.
+LEGACY_MOCK_ENDPOINT = "https://mock.test"
 
 
 # ----------------------------
@@ -177,17 +185,42 @@ async def _ensure_supported_devices(hass: HomeAssistant, entry: ConfigEntry, cli
     )
 
 
+def _migrate_legacy_mock_endpoint(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Turn an endpoint pointing at the old mock host into the mock switch."""
+    endpoint = (entry.data.get(CONF_API_ENDPOINT) or "").rstrip("/")
+    if endpoint != LEGACY_MOCK_ENDPOINT:
+        return
+
+    _LOGGER.warning(
+        "The API endpoint was set to %s, which does not resolve. Mock data is "
+        "now a switch under Developer tools in the integration options; "
+        "enabling it and restoring the default endpoint",
+        LEGACY_MOCK_ENDPOINT,
+    )
+    hass.config_entries.async_update_entry(
+        entry,
+        data={
+            **entry.data,
+            CONF_API_ENDPOINT: BASE_URL,
+            CONF_USE_MOCK_DATA: True,
+        },
+    )
+
+
 # ----------------------------
 # Setup entry
 # ----------------------------
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Eplucon from a config entry."""
-    api_token = entry.data["api_token"]
-    api_endpoint = entry.data.get("api_endpoint", BASE_URL)
+    _migrate_legacy_mock_endpoint(hass, entry)
+
+    api_token = entry.data[CONF_API_TOKEN]
+    api_endpoint = entry.data.get(CONF_API_ENDPOINT, BASE_URL)
+    use_mock_data = entry.data.get(CONF_USE_MOCK_DATA, False)
 
     session = async_get_clientsession(hass)
-    client = EpluconApi(api_token, api_endpoint, session)
+    client = EpluconApi(api_token, api_endpoint, session, use_mock_data=use_mock_data)
 
     # Store last known good devices
     hass.data.setdefault(DOMAIN, {})

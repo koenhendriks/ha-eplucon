@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+* A **Use mock data** switch under **Developer tools** in the setup and options dialog. With it on, all data comes from the JSON fixtures in `custom_components/eplucon/eplucon_api/mock/` — a mock heat pump and a mock zone controller with five zones — so the integration can be run and developed without a real installation or an API token. No request is sent and the API endpoint is left untouched. Fixtures are re-read on every refresh, can be overridden per module (`get_zones.1007331.json`), and can mock an error response with an `http_status` key. See the "Mock data" section in the README.
+
+### Changed
+* All API requests now go through one request helper. A response whose content type isn't JSON is reported as an API error, the same as an unparseable body, instead of raising an aiohttp `ContentTypeError` past the config flow's error handling.
+
+### Removed
+* `eplucon_api/eplucon_client_mock.py`, a copy of the client that had drifted behind the real one and could only be used by editing an import. The **Use mock data** switch replaces it.
+
+### Fixed
+* A custom API endpoint was reset to the default the next time the integration options were saved. Saving the options wrote back only the API token and the device list, so every other field in the config entry was dropped; the options step now keeps them. Reported by a user running a custom endpoint.   
+
+Thanks for reporting, Markus!
+
+* Config entries pointing at `https://mock.test`, the short-lived way of selecting mock data, are migrated at startup to the default endpoint with the **Use mock data** switch turned on, instead of failing to resolve that host.
+
 ## [1.6.0](https://github.com/koenhendriks/ha-eplucon/releases/1.6.0) - 2026-08-12
 
 Big thanks to [@knz](https://github.com/knz) for this release.
