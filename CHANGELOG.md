@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.6.1](https://github.com/koenhendriks/ha-eplucon/releases/1.6.1) - 2026-08-20
+
 ### Added
 * A **Use mock data** switch under **Developer tools** in the setup and options dialog. With it on, all data comes from the JSON fixtures in `custom_components/eplucon/eplucon_api/mock/` — a mock heat pump and a mock zone controller with five zones — so the integration can be run and developed without a real installation or an API token. No request is sent and the API endpoint is left untouched. Fixtures are re-read on every refresh, can be overridden per module (`get_zones.1007331.json`), and can mock an error response with an `http_status` key. See the "Mock data" section in the README.
 
