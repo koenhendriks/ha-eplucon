@@ -6,8 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.6.2](https://github.com/koenhendriks/ha-eplucon/releases/1.6.2) - 2026-09-12
+
 ### Fixed
-* The integration failed to set up, and every refresh logged `Unexpected error while updating Eplucon data` with a `KeyError: 'data'` stacktrace, when the portal answered a module request with an error body such as `{"auth": true, "message": "Invalid account", "error_code": 400}`. The realtime, heatloading and module list endpoints read the response as if it were a success and tripped over the missing `data` member. The client now checks the HTTP status, `error_code` and the presence of `data` on every endpoint, the same way the zones endpoint already did, and reports the portal's own message (`Realtime info request for module 1003151 returned error_code 400: Invalid account`). The coordinator raises `UpdateFailed` for API errors, so entities become unavailable and Home Assistant logs the failure once, and its recovery, instead of a stacktrace on every refresh.
+* ([#39](https://github.com/koenhendriks/ha-eplucon/pull/39)) The integration failed to set up, and every refresh logged `Unexpected error while updating Eplucon data` with a `KeyError: 'data'` stacktrace, when the portal answered a module request with an error body such as `{"auth": true, "message": "Invalid account", "error_code": 400}`. The realtime, heatloading and module list endpoints read the response as if it were a success and tripped over the missing `data` member. The client now checks the HTTP status, `error_code` and the presence of `data` on every endpoint, the same way the zones endpoint already did, and reports the portal's own message (`Realtime info request for module 1003151 returned error_code 400: Invalid account`). The coordinator raises `UpdateFailed` for API errors, so entities become unavailable and Home Assistant logs the failure once, and its recovery, instead of a stacktrace on every refresh.
 
 ## [1.6.1](https://github.com/koenhendriks/ha-eplucon/releases/1.6.1) - 2026-08-20
 
