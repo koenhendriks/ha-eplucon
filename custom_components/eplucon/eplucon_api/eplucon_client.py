@@ -154,14 +154,17 @@ class EpluconApi:
         url = f"{self._base}/econtrol/modules"
         _LOGGER.debug("Fetching devices list: %s", url)
 
-        _, data = await self._request(url, "get_devices")
+        status, data = await self._request(url, "get_devices")
 
         _LOGGER.debug("Devices raw response: %s", data)
-        self._validate_response(data)
+        items = self._payload(status, data, "Devices request")
+
+        if not isinstance(items, list):
+            raise ApiError(f"Devices response has no 'data' list: {items!r}")
 
         devices: list[DeviceDTO] = []
 
-        for item in data.get("data", []):
+        for item in items:
             try:
                 devices.append(DeviceDTO(**item))
             except Exception:
@@ -175,26 +178,38 @@ class EpluconApi:
         url = f"{self._base}/econtrol/modules/{module_id}/get_realtime_info"
         _LOGGER.debug("Fetching realtime info for %s: %s", module_id, url)
 
-        _, data = await self._request(url, "get_realtime_info", module_id)
+        status, data = await self._request(url, "get_realtime_info", module_id)
 
         _LOGGER.debug("Realtime raw response for %s: %s", module_id, data)
-        self._validate_response(data)
+        payload = self._payload(status, data, "Realtime info request", module_id)
 
-        common = CommonInfoDTO(**data["data"]["common"])
-        heatpump = data["data"].get("heatpump")
+        common = payload.get("common") if isinstance(payload, dict) else None
+        if not isinstance(common, dict):
+            raise ApiError(
+                f"Realtime info response for module {module_id} has no "
+                f"'common' object: {payload!r}"
+            )
 
-        return RealtimeInfoDTO(common=common, heatpump=heatpump)
+        return RealtimeInfoDTO(
+            common=CommonInfoDTO(**common), heatpump=payload.get("heatpump")
+        )
 
     async def get_heatpump_heatloading_status(self, module_id: int) -> HeatLoadingDTO:
         url = f"{self._base}/econtrol/modules/{module_id}/heatloading_status"
         _LOGGER.debug("Fetching heatloading status for %s: %s", module_id, url)
 
-        _, data = await self._request(url, "get_heatloading_status", module_id)
+        status, data = await self._request(url, "get_heatloading_status", module_id)
 
         _LOGGER.debug("Heatloading raw response for %s: %s", module_id, data)
-        self._validate_response(data)
+        payload = self._payload(status, data, "Heatloading request", module_id)
 
-        return HeatLoadingDTO(**data["data"])
+        if not isinstance(payload, dict):
+            raise ApiError(
+                f"Heatloading response for module {module_id} has no 'data' "
+                f"object: {payload!r}"
+            )
+
+        return HeatLoadingDTO(**payload)
 
     async def get_zones(self, module_id: int) -> list[ZoneDTO]:
         """Fetch the regulation zones / control panels of a zone controller.
@@ -340,6 +355,42 @@ class EpluconApi:
         zone.algorithm = flags.get("algorithm")
 
         return zone
+
+    def _payload(
+        self, status: int, data: Any, what: str, module_id: int | None = None
+    ) -> Any:
+        """Check a portal response envelope and return its `data` member.
+
+        The portal reports most failures with `auth: true` and no `data`,
+        only a `message` and a non-200 `error_code` (for example
+        `{"auth": true, "message": "Invalid account", "error_code": 400}`).
+        Such a body used to be indexed as if it were a success and escaped
+        as a bare KeyError; report it as an ApiError carrying the portal's
+        message instead.
+        """
+        subject = f"{what} for module {module_id}" if module_id is not None else what
+
+        if status in (401, 403):
+            raise ApiAuthError(f"{subject} was not authorized (HTTP {status})")
+
+        self._validate_response(data)
+
+        message = data.get("message")
+        error_code = self._error_code(data)
+        detail = f": {message}" if message else ""
+
+        if status != 200:
+            raise ApiError(f"{subject} failed with HTTP {status}{detail}")
+
+        if error_code is not None and error_code != 200:
+            raise ApiError(
+                f"{subject} returned error_code {error_code}{detail}"
+            )
+
+        if "data" not in data:
+            raise ApiError(f"{subject} returned no data{detail}")
+
+        return data["data"]
 
     @staticmethod
     def _validate_response(response: Any) -> None:

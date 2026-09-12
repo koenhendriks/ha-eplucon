@@ -9,7 +9,7 @@ from typing import Dict
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers import device_registry
 
@@ -29,6 +29,7 @@ from .const import (
 )
 from .eplucon_api.eplucon_client import (
     EpluconApi,
+    ApiAuthError,
     ApiError,
     DeviceDTO,
     BASE_URL,
@@ -262,13 +263,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             )
             return updated_devices
 
-        except ApiError as err:
-            _LOGGER.error("Eplucon API error: %s", err)
-            raise
+        except (ApiError, ApiAuthError) as err:
+            # UpdateFailed is the coordinator's own failure signal: entities
+            # go unavailable, the message is logged once instead of on every
+            # refresh and without a stacktrace, and recovery is logged too.
+            # Raising the bare error instead had it reported as "Unexpected
+            # error fetching Eplucon devices data" on each refresh.
+            raise UpdateFailed(f"Eplucon API error: {err}") from err
 
-        except Exception:
+        except Exception as err:
             _LOGGER.exception("Unexpected error while updating Eplucon data")
-            raise
+            raise UpdateFailed(f"Unexpected error: {err}") from err
 
     coordinator = DataUpdateCoordinator(
         hass,
