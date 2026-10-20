@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.6.3](https://github.com/koenhendriks/ha-eplucon/releases/1.6.3) - 2026-10-20
+
+### Added
+* ([#40](https://github.com/koenhendriks/ha-eplucon/pull/40)) Brand assets (icon and logo) shipped with the integration in `custom_components/eplucon/brand/`, so Home Assistant 2026.3 and newer show the Eplucon branding from the integration itself. Thanks [@frenck](https://github.com/frenck)!
+
+### Fixed
+* Hassfest validation failed because `aiohttp` was listed in the manifest requirements. Home Assistant already ships aiohttp, so the requirement is removed.
+
 ## [1.6.2](https://github.com/koenhendriks/ha-eplucon/releases/1.6.2) - 2026-09-12
 
 ### Fixed

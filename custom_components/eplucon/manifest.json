@@ -9,5 +9,5 @@
   "issue_tracker": "https://github.com/koenhendriks/ha-eplucon/issues",
   "requirements": ["dacite"],
   "single_config_entry": true,
-  "version": "1.6.2"
+  "version": "1.6.3"
 }
