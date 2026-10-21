@@ -44,6 +44,12 @@ CONF_API_ENDPOINT = "api_endpoint"
 CONF_DEVELOPER_OPTIONS = "developer_options"
 CONF_USE_MOCK_DATA = "use_mock_data"
 
+# Seconds between refreshes. Every refresh costs two portal requests per heat
+# pump and one per zone controller, so the floor stops it hammering the portal.
+DEFAULT_SCAN_INTERVAL = 30
+MIN_SCAN_INTERVAL = 30
+MAX_SCAN_INTERVAL = 3600
+
 # Module types this integration knows how to handle.
 HEAT_PUMP_TYPES = ["heat_pump"]
 ZONE_CONTROLLER_TYPES = ["zones_system_controller"]

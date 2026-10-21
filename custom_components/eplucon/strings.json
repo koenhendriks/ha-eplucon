@@ -6,11 +6,13 @@
                 "title": "Connect to Eplucon",
                 "description": "Please enter your API token to connect to Eplucon ({api_tokens_url}).",
                 "data_description": {
-                    "api_endpoint": "Override the default API endpoint (optional)"
+                    "api_endpoint": "Override the default API endpoint (optional)",
+                    "scan_interval": "How often the Eplucon portal is polled. A longer interval sends fewer requests to the portal."
                 },
                 "data": {
                     "api_token": "API Token",
-                    "api_endpoint": "API Endpoint"
+                    "api_endpoint": "API Endpoint",
+                    "scan_interval": "Update interval (seconds)"
                 },
                 "sections": {
                     "developer_options": {
@@ -42,11 +44,13 @@
                 "title": "Eplucon Config options",
                 "description": "Current API token & endpoint",
                 "data_description": {
-                    "api_endpoint": "Override the default API endpoint (optional)"
+                    "api_endpoint": "Override the default API endpoint (optional)",
+                    "scan_interval": "How often the Eplucon portal is polled. A longer interval sends fewer requests to the portal."
                 },
                 "data": {
                     "api_token": "API Token",
-                    "api_endpoint": "API Endpoint"
+                    "api_endpoint": "API Endpoint",
+                    "scan_interval": "Update interval (seconds)"
                 },
                 "sections": {
                     "developer_options": {
