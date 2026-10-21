@@ -7,7 +7,10 @@ import dataclasses
 from datetime import timedelta
 from typing import Dict
 
+import aiohttp
+
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import CONF_SCAN_INTERVAL
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -26,6 +29,7 @@ from .const import (
     CONF_API_TOKEN,
     CONF_API_ENDPOINT,
     CONF_USE_MOCK_DATA,
+    DEFAULT_SCAN_INTERVAL,
 )
 from .eplucon_api.eplucon_client import (
     EpluconApi,
@@ -37,7 +41,15 @@ from .eplucon_api.eplucon_client import (
 
 _LOGGER = logging.getLogger(__name__)
 
-UPDATE_INTERVAL = timedelta(seconds=30)
+# How long the last good values are served while the portal keeps failing
+# before entities go unavailable. Since October 2026 the portal answers
+# "Invalid account" (error_code 400) for minutes at a time on accounts that
+# are fine, several times a day; see issue #41.
+STALE_DATA_GRACE = timedelta(minutes=30)
+
+# Failures that say nothing about the account or the module and usually pass
+# on their own. An ApiAuthError is not among them: that needs a new token.
+TRANSIENT_ERRORS = (ApiError, aiohttp.ClientError, TimeoutError)
 
 # Mock data was briefly selected by pointing the API endpoint at this host,
 # which could only ever fail: the host does not resolve. Entries still holding
@@ -233,7 +245,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     await register_devices(devices, entry, hass)
 
+    # Monotonic time of the first failed refresh in the current outage.
+    outage_since: float | None = None
+
     async def async_update_data() -> list[DeviceDTO]:
+        nonlocal outage_since
         start = time.monotonic()
         updated_devices: list[DeviceDTO] = []
 
@@ -261,15 +277,44 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 "Finished fetching Eplucon devices data in %.3f seconds (success: True)",
                 time.monotonic() - start,
             )
+            if outage_since is not None:
+                _LOGGER.info(
+                    "Eplucon API is answering again after %d seconds",
+                    time.monotonic() - outage_since,
+                )
+                outage_since = None
             return updated_devices
 
-        except (ApiError, ApiAuthError) as err:
-            # UpdateFailed is the coordinator's own failure signal: entities
-            # go unavailable, the message is logged once instead of on every
-            # refresh and without a stacktrace, and recovery is logged too.
-            # Raising the bare error instead had it reported as "Unexpected
-            # error fetching Eplucon devices data" on each refresh.
+        # UpdateFailed is the coordinator's own failure signal: entities go
+        # unavailable, the message is logged once instead of on every refresh
+        # and without a stacktrace, and recovery is logged too. Raising the
+        # bare error instead had it reported as "Unexpected error fetching
+        # Eplucon devices data" on each refresh.
+        except ApiAuthError as err:
             raise UpdateFailed(f"Eplucon API error: {err}") from err
+
+        except TRANSIENT_ERRORS as err:
+            now = time.monotonic()
+            outage_started = outage_since is None
+            if outage_started:
+                outage_since = now
+
+            # Nothing to fall back on during the first refresh; failing it
+            # makes Home Assistant retry the setup later.
+            if (
+                coordinator.data is None
+                or now - outage_since >= STALE_DATA_GRACE.total_seconds()
+            ):
+                raise UpdateFailed(f"Eplucon API error: {err}") from err
+
+            if outage_started:
+                _LOGGER.warning(
+                    "Eplucon API request failed (%s), keeping the last known "
+                    "values for up to %s while it keeps failing",
+                    err,
+                    STALE_DATA_GRACE,
+                )
+            return coordinator.data
 
         except Exception as err:
             _LOGGER.exception("Unexpected error while updating Eplucon data")
@@ -280,7 +325,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         _LOGGER,
         name="Eplucon devices",
         update_method=async_update_data,
-        update_interval=UPDATE_INTERVAL,
+        update_interval=timedelta(
+            seconds=entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
+        ),
     )
 
     await coordinator.async_config_entry_first_refresh()
@@ -289,7 +336,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
+    # Registered last: the migrations above update the entry themselves.
+    entry.async_on_unload(entry.add_update_listener(_async_reload_entry))
+
     return True
+
+
+async def _async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Apply a changed token, endpoint or update interval from the options."""
+    await hass.config_entries.async_reload(entry.entry_id)
 
 
 # ----------------------------

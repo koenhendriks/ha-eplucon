@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+* ([#41](https://github.com/koenhendriks/ha-eplucon/issues/41)) An **Update interval (seconds)** setting in the setup and options dialog, from 30 seconds (the default, as before) up to an hour. Saving the options now reloads the integration, so a new interval, API token or endpoint takes effect right away instead of after a restart.
+
+### Fixed
+* ([#41](https://github.com/koenhendriks/ha-eplucon/issues/41)) Since October 2026 the portal answers `Invalid account` (error_code 400) for minutes at a time, several times a day, on accounts that are fine. Every such answer made all sensors unavailable, leaving gaps in the history and triggering automations. Portal errors, connection errors and timeouts now keep the last known values for up to 30 minutes; only when the portal keeps failing past that do the entities go unavailable. The start of an outage is logged once as a warning and the recovery as info. Connection errors and timeouts are also no longer logged as `Unexpected error while updating Eplucon data` with a stacktrace. An authentication failure still makes the entities unavailable straight away. Thanks for reporting, Maarten!
+
 ## [1.6.3](https://github.com/koenhendriks/ha-eplucon/releases/1.6.3) - 2026-10-20
 
 ### Added

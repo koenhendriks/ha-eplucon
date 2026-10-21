@@ -2,6 +2,7 @@ import logging
 import voluptuous as vol
 from typing import Any, Dict, Optional
 from homeassistant import config_entries
+from homeassistant.const import CONF_SCAN_INTERVAL
 from homeassistant.core import callback
 from homeassistant.helpers import aiohttp_client
 from homeassistant.data_entry_flow import FlowResult, section
@@ -13,6 +14,9 @@ from .const import (
     CONF_API_ENDPOINT,
     CONF_DEVELOPER_OPTIONS,
     CONF_USE_MOCK_DATA,
+    DEFAULT_SCAN_INTERVAL,
+    MIN_SCAN_INTERVAL,
+    MAX_SCAN_INTERVAL,
 )
 from .eplucon_api.eplucon_client import EpluconApi, ApiAuthError, ApiError, BASE_URL
 
@@ -23,6 +27,7 @@ def build_schema(
     api_token: Optional[str] = None,
     api_endpoint: str = BASE_URL,
     use_mock_data: bool = False,
+    scan_interval: int = DEFAULT_SCAN_INTERVAL,
 ) -> vol.Schema:
     """Build the form schema shared by the setup step and the options step.
 
@@ -40,6 +45,9 @@ def build_schema(
     return vol.Schema({
         api_token_key: str,
         vol.Required(CONF_API_ENDPOINT, default=api_endpoint): str,
+        vol.Required(CONF_SCAN_INTERVAL, default=scan_interval): vol.All(
+            vol.Coerce(int), vol.Range(min=MIN_SCAN_INTERVAL, max=MAX_SCAN_INTERVAL)
+        ),
         vol.Required(CONF_DEVELOPER_OPTIONS): section(
             vol.Schema({
                 vol.Required(CONF_USE_MOCK_DATA, default=use_mock_data): bool,
@@ -66,6 +74,7 @@ class EpluconConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         api_token: Optional[str] = None
         api_endpoint: str = BASE_URL
         use_mock_data = False
+        scan_interval = DEFAULT_SCAN_INTERVAL
 
         _LOGGER.debug("Starting Eplucon config flow")
 
@@ -73,6 +82,7 @@ class EpluconConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             # Attempt to connect to the API using the provided API token & endpoint
             api_token = user_input[CONF_API_TOKEN]
             api_endpoint = user_input[CONF_API_ENDPOINT]
+            scan_interval = user_input.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
             use_mock_data = read_use_mock_data(user_input)
             client = EpluconApi(
                 api_token,
@@ -97,6 +107,7 @@ class EpluconConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         "devices": devices,
                         CONF_API_TOKEN: api_token,
                         CONF_API_ENDPOINT: api_endpoint,
+                        CONF_SCAN_INTERVAL: scan_interval,
                         CONF_USE_MOCK_DATA: use_mock_data,
                     })
 
@@ -120,7 +131,9 @@ class EpluconConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         # If the user input is not valid or an error occurred, show the form again with the error message
         return self.async_show_form(
             step_id="user",
-            data_schema=build_schema(api_token, api_endpoint, use_mock_data),
+            data_schema=build_schema(
+                api_token, api_endpoint, use_mock_data, scan_interval
+            ),
             errors=errors,
             description_placeholders={"api_tokens_url": EPLUCON_API_TOKENS_URL},
         )
@@ -147,11 +160,13 @@ class EpluconOptionsFlowHandler(config_entries.OptionsFlow):
         api_token = entry_data.get(CONF_API_TOKEN)
         api_endpoint = entry_data.get(CONF_API_ENDPOINT, BASE_URL)
         use_mock_data = entry_data.get(CONF_USE_MOCK_DATA, False)
+        scan_interval = entry_data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
 
         if user_input is not None:
             # If the user has provided new data, update the config entry
             api_token = user_input.get(CONF_API_TOKEN)
             api_endpoint = user_input.get(CONF_API_ENDPOINT, BASE_URL)
+            scan_interval = user_input.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
             use_mock_data = read_use_mock_data(user_input)
 
             # Revalidate the API token to ensure it's correct
@@ -184,6 +199,7 @@ class EpluconOptionsFlowHandler(config_entries.OptionsFlow):
                             **entry_data,
                             CONF_API_TOKEN: api_token,
                             CONF_API_ENDPOINT: api_endpoint,
+                            CONF_SCAN_INTERVAL: scan_interval,
                             CONF_USE_MOCK_DATA: use_mock_data,
                             "devices": devices,
                         }
@@ -210,6 +226,8 @@ class EpluconOptionsFlowHandler(config_entries.OptionsFlow):
         # Show the options form with the current API token as the default value
         return self.async_show_form(
             step_id="init",
-            data_schema=build_schema(api_token, api_endpoint, use_mock_data),
+            data_schema=build_schema(
+                api_token, api_endpoint, use_mock_data, scan_interval
+            ),
             errors=errors
         )
