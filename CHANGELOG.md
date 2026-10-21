@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.7.0](https://github.com/koenhendriks/ha-eplucon/releases/1.7.0) - 2026-10-21
+
 ### Added
 * ([#41](https://github.com/koenhendriks/ha-eplucon/issues/41)) An **Update interval (seconds)** setting in the setup and options dialog, from 30 seconds (the default, as before) up to an hour. Saving the options now reloads the integration, so a new interval, API token or endpoint takes effect right away instead of after a restart.
 
