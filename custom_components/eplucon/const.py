@@ -30,7 +30,7 @@ from typing import Any
 
 DOMAIN = "eplucon"
 MANUFACTURER = "Eplucon"
-PLATFORMS = ["sensor", "binary_sensor"]
+PLATFORMS = ["sensor", "binary_sensor", "number", "switch", "select", "climate"]
 EPLUCON_PORTAL_URL = "https://portaal.eplucon.nl/"
 # Passed to the config flow as a description placeholder; hassfest rejects a
 # URL written inline in strings.json.
@@ -43,6 +43,19 @@ CONF_API_TOKEN = "api_token"
 CONF_API_ENDPOINT = "api_endpoint"
 CONF_DEVELOPER_OPTIONS = "developer_options"
 CONF_USE_MOCK_DATA = "use_mock_data"
+
+# Optional web control: the portal website's login, kept in its own collapsed
+# section. The 2FA field holds an authenticator key when one was given; a
+# one-time code is used for the first login and never stored.
+CONF_WEB_CONTROL = "web_control"
+CONF_WEB_USERNAME = "web_username"
+CONF_WEB_PASSWORD = "web_password"
+CONF_WEB_TWO_FACTOR = "web_two_factor"
+
+# The web settings change rarely and each read costs one portal request per
+# setting per heat pump. Polling also keeps a 2FA-verified session alive: the
+# portal drops it after 2 hours without a request.
+WEB_CONTROL_SCAN_INTERVAL = 300
 
 # Seconds between refreshes. Every refresh costs two portal requests per heat
 # pump and one per zone controller, so the floor stops it hammering the portal.

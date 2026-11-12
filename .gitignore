@@ -186,3 +186,11 @@ fabric.properties
 
 ha_config
 custom_components/eplucon/test.py
+
+# The repository's own scripts (the virtualenv rule above ignores any scripts/)
+!/scripts/
+
+# Live portal testing: credentials, raw captures and the test log
+prod.env
+.live/
+webcontrol-test-log.md

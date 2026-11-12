@@ -6,6 +6,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+* Optional **web control**: change heat pump settings from Home Assistant through the Eplucon portal website, which the official API can't do. Add your portal e-mail address and password (and, for accounts with 2-step authentication, the current code or the authenticator key) in the new **Web control (optional)** section of the setup or options dialog. Each heat pump then gets a thermostat (climate) entity plus number, switch and select entities for the target room temperature, warm water temperature and restart delta, heating and cooling thresholds, heating, cooling and warm water on/off, heat pump state, operation mode and heating curve correction. Settings are read from the portal every 5 minutes; a lost login or 2FA session shows up as a repair notice and never affects the read-only sensors. Based on the requests worked out by [@pdevick](https://github.com/pdevick) in [pdevick/EpluControl](https://github.com/pdevick/EpluControl); see `docs/web-control.md`.
+
+  The thermostat, with the room temperature from the API and the target set through the portal:
+
+  ![Thermostat dialog](docs/images/web-control-thermostat.png)
+
+  Operation mode, heat pump state and heating curve correction offer the same choices as the portal:
+
+  ![Operation mode choices](docs/images/web-control-operation-mode.png)
+
+  The new section in the setup and options dialog, open by default:
+
+  ![Web control section in the Eplucon options dialog](docs/images/web-control-options.png)
+
+  The heat pump's new controls, with the values read from the portal:
+
+  ![Controls of the heat pump device](docs/images/web-control-device.png)
+
+### Changed
+* The **Developer tools** section is now the last one in the setup and options dialog.
+
 ## [1.7.0](https://github.com/koenhendriks/ha-eplucon/releases/1.7.0) - 2026-10-21
 
 ### Added

@@ -13,7 +13,10 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_SCAN_INTERVAL
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.aiohttp_client import (
+    async_create_clientsession,
+    async_get_clientsession,
+)
 from homeassistant.helpers import device_registry
 
 from dacite import from_dict
@@ -29,8 +32,12 @@ from .const import (
     CONF_API_TOKEN,
     CONF_API_ENDPOINT,
     CONF_USE_MOCK_DATA,
+    CONF_WEB_USERNAME,
+    CONF_WEB_PASSWORD,
+    CONF_WEB_TWO_FACTOR,
     DEFAULT_SCAN_INTERVAL,
 )
+from .control_entity import WEB_COORDINATORS
 from .eplucon_api.eplucon_client import (
     EpluconApi,
     ApiAuthError,
@@ -38,6 +45,8 @@ from .eplucon_api.eplucon_client import (
     DeviceDTO,
     BASE_URL,
 )
+from .eplucon_api.web_control import EpluconWebControl, portal_url_from_api
+from .web_coordinator import EpluconWebCoordinator, session_store
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -334,12 +343,63 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hass.data[DOMAIN][entry.entry_id] = coordinator
 
+    await _async_setup_web_control(hass, entry, api_endpoint, use_mock_data)
+
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     # Registered last: the migrations above update the entry themselves.
     entry.async_on_unload(entry.add_update_listener(_async_reload_entry))
 
     return True
+
+
+async def _async_setup_web_control(
+    hass: HomeAssistant, entry: ConfigEntry, api_endpoint: str, use_mock_data: bool
+) -> None:
+    """Start web control when its login is configured; it never blocks setup."""
+    store = session_store(hass)
+    username = entry.data.get(CONF_WEB_USERNAME)
+    password = entry.data.get(CONF_WEB_PASSWORD)
+    if not username or not password:
+        await store.async_remove()
+        return
+
+    saved = await store.async_load() or {}
+    cookies = saved.get("cookies") if saved.get("username") == username else None
+
+    def save_cookies(new: dict[str, str]) -> None:
+        store.async_delay_save(lambda: {"username": username, "cookies": new}, 1)
+
+    # Its own cookie jar: the portal login must not leak into the session
+    # Home Assistant shares between integrations.
+    session = None if use_mock_data else async_create_clientsession(
+        hass, cookie_jar=aiohttp.CookieJar()
+    )
+    client = EpluconWebControl(
+        portal_url_from_api(api_endpoint),
+        username,
+        password,
+        session,
+        two_factor=entry.data.get(CONF_WEB_TWO_FACTOR),
+        cookies=cookies,
+        on_cookies=save_cookies,
+        use_mock_data=use_mock_data,
+    )
+
+    heat_pumps = [
+        device
+        for device in [await device_dict_to_dto(d) for d in entry.data["devices"]]
+        if device.type in HEAT_PUMP_TYPES
+    ]
+    web_coordinator = EpluconWebCoordinator(hass, entry, client, heat_pumps)
+    # Not the first-refresh variant: a portal hiccup leaves the controls
+    # unavailable until the next poll instead of failing the whole entry.
+    await web_coordinator.async_refresh()
+
+    hass.data[DOMAIN].setdefault(WEB_COORDINATORS, {})[entry.entry_id] = web_coordinator
+    # The latest session cookies, for a restart that comes back within the
+    # portal's 2 hour session lifetime.
+    entry.async_on_unload(lambda: save_cookies(client.session_cookies()))
 
 
 async def _async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
@@ -379,5 +439,6 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id, None)
+        hass.data[DOMAIN].get(WEB_COORDINATORS, {}).pop(entry.entry_id, None)
 
     return unload_ok

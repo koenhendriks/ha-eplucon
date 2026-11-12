@@ -24,6 +24,20 @@
                         "data_description": {
                             "use_mock_data": "Read every value from the mock files bundled with the integration instead of the Eplucon API. No request is sent and the API token is ignored."
                         }
+                    },
+                    "web_control": {
+                        "name": "Web control (optional)",
+                        "description": "Change heat pump settings from Home Assistant through the Eplucon portal website, which the official API cannot do. Use the e-mail address and password you log in to the portal with. Leave empty to only read data.",
+                        "data": {
+                            "web_username": "Portal e-mail address",
+                            "web_password": "Portal password",
+                            "web_two_factor": "2FA code or authenticator key"
+                        },
+                        "data_description": {
+                            "web_username": "Required when a password is entered.",
+                            "web_password": "Required when an e-mail address is entered.",
+                            "web_two_factor": "Only when your portal account uses 2-step authentication. A 6-digit code is used once; you'll be asked for a new one if the portal session is ever lost (for example after Home Assistant was off for more than 2 hours). The authenticator key (the text code shown when you set up the authenticator app) lets the integration log in again on its own."
+                        }
                     }
                 }
             }
@@ -32,7 +46,12 @@
             "auth": "Authentication failed. Please check your API token and/or API endpoint.",
             "api": "Failed to connect to the Eplucon API. Please check the API endpoint and try again or check the logs for more info.",
             "unknown": "An unexpected error occurred. Please try again or check the logs for more info.",
-            "no-devices": "No devices found. Ensure you're device is added to your Eplucon account"
+            "no-devices": "No devices found. Ensure you're device is added to your Eplucon account",
+            "web_credentials_incomplete": "Web control needs both the portal e-mail address and the password, or neither.",
+            "web_auth": "The Eplucon portal rejected the e-mail address or password.",
+            "web_two_factor_required": "Your portal account uses 2-step authentication. Enter the current 6-digit code or the authenticator key.",
+            "web_two_factor_invalid": "The Eplucon portal rejected the 2FA code. Enter the current code and try again.",
+            "web_connect": "Could not reach the Eplucon portal website. Try again or check the logs for more info."
         },
         "abort": {
             "single_instance_allowed": "Only a single instance of Eplucon is allowed."
@@ -62,6 +81,20 @@
                         "data_description": {
                             "use_mock_data": "Read every value from the mock files bundled with the integration instead of the Eplucon API. No request is sent and the API token is ignored."
                         }
+                    },
+                    "web_control": {
+                        "name": "Web control (optional)",
+                        "description": "Change heat pump settings from Home Assistant through the Eplucon portal website, which the official API cannot do. Use the e-mail address and password you log in to the portal with. Leave empty to only read data.",
+                        "data": {
+                            "web_username": "Portal e-mail address",
+                            "web_password": "Portal password",
+                            "web_two_factor": "2FA code or authenticator key"
+                        },
+                        "data_description": {
+                            "web_username": "Required when a password is entered.",
+                            "web_password": "Required when an e-mail address is entered.",
+                            "web_two_factor": "Only when your portal account uses 2-step authentication. A 6-digit code is used once; you'll be asked for a new one if the portal session is ever lost (for example after Home Assistant was off for more than 2 hours). The authenticator key (the text code shown when you set up the authenticator app) lets the integration log in again on its own."
+                        }
                     }
                 }
             }
@@ -70,7 +103,52 @@
             "auth": "Authentication failed. Please check your API token and/or API endpoint.",
             "api": "Failed to connect to the Eplucon API. Please check the API endpoint and try again or check the logs for more info.",
             "unknown": "An unexpected error occurred. Please try again or check the logs for more info.",
-            "no-devices": "No devices found. Ensure you're device is added to your Eplucon account"
+            "no-devices": "No devices found. Ensure you're device is added to your Eplucon account",
+            "web_credentials_incomplete": "Web control needs both the portal e-mail address and the password, or neither.",
+            "web_auth": "The Eplucon portal rejected the e-mail address or password.",
+            "web_two_factor_required": "Your portal account uses 2-step authentication. Enter the current 6-digit code or the authenticator key.",
+            "web_two_factor_invalid": "The Eplucon portal rejected the 2FA code. Enter the current code and try again.",
+            "web_connect": "Could not reach the Eplucon portal website. Try again or check the logs for more info."
+        }
+    },
+    "issues": {
+        "web_control_auth": {
+            "title": "Eplucon web control can't log in",
+            "description": "The Eplucon portal rejected the stored e-mail address or password, so heat pump settings can't be read or changed. Update them under Settings > Devices & services > Eplucon > Configure, in the Web control section."
+        },
+        "web_control_two_factor": {
+            "title": "Eplucon web control needs a new 2FA code",
+            "description": "The portal session for web control has ended and the portal asks for a 2-step authentication code again. Enter the current code (or your authenticator key to avoid this in future) under Settings > Devices & services > Eplucon > Configure, in the Web control section."
+        }
+    },
+    "entity": {
+        "select": {
+            "heatpump_active": {
+                "state": {
+                    "off": "Off",
+                    "on": "On",
+                    "emergency": "Emergency operation",
+                    "apx": "APX"
+                }
+            },
+            "heatpump_operation_mode": {
+                "state": {
+                    "cooling": "Cooling",
+                    "heating": "Heating",
+                    "auto_th_touch": "Auto th-TOUCH",
+                    "auto_heat_pump": "Auto heat pump",
+                    "fireplace": "Fireplace"
+                }
+            },
+            "heating_curve_correction": {
+                "state": {
+                    "minus_4": "-4 °C",
+                    "minus_2": "-2 °C",
+                    "zero": "0 °C",
+                    "plus_2": "+2 °C",
+                    "plus_4": "+4 °C"
+                }
+            }
         }
     }
 }
