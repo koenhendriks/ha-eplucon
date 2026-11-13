@@ -6,8 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [2.1.0](https://github.com/koenhendriks/ha-eplucon/releases/2.1.0) - 2026-11-13
+
+Big thanks to [@knz](https://github.com/knz) for this release.
+
 ### Added
-* With web control on, every zone of a zone controller (th-TOUCH) gets a **thermostat** (climate) entity on its zone device, so a room's target temperature can be set from Home Assistant. It shows the zone's temperature, humidity, heating or cooling and call for heat from the API, and sets the target (5-35 °C, in steps of 0.1 °C) through the portal's *Constante temperatuur* dialog, which puts the zone on a constant temperature. The zone setpoints are read from the portal's zones page with the other web control settings every 5 minutes, which also keeps the portal session alive on accounts with zones but no heat pump. If the portal can't be read, the zone thermostats keep showing the readings from the API and only setting a target is refused. After a write the API is refreshed too, so the new target doesn't wait for a long update interval. See `docs/zones-api.md`.
+* ([#45](https://github.com/koenhendriks/ha-eplucon/pull/45)) With web control on, every zone of a zone controller (th-TOUCH) gets a **thermostat** (climate) entity on its zone device, so a room's target temperature can be set from Home Assistant. Related to ([#28](https://github.com/koenhendriks/ha-eplucon/issues/28)). It shows the zone's temperature, humidity, heating or cooling and call for heat from the API, and sets the target (5-35 °C, in steps of 0.1 °C) through the portal's *Constante temperatuur* dialog, which puts the zone on a constant temperature. **Setting a target turns off the zone's schedule**; pick the schedule again on the portal or the control panel. The zone setpoints are read from the portal's zones page with the other web control settings every 5 minutes, which also keeps the portal session alive on accounts with zones but no heat pump. If the portal can't be read, the zone thermostats keep showing the readings from the API and only setting a target is refused. After a zone write the API is refreshed too, so the new target doesn't wait for a long update interval. See `docs/zones-api.md`. By [@knz](https://github.com/knz)
 
 ## [2.0.0](https://github.com/koenhendriks/ha-eplucon/releases/2.0.0) - 2026-11-12
 
