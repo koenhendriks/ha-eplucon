@@ -23,7 +23,7 @@ from .const import DOMAIN
 from .control_entity import heat_pump_device_info, web_coordinator
 from .eplucon_api.DTO.DeviceDTO import DeviceDTO
 from .eplucon_api.DTO.ZoneDTO import ZoneDTO
-from .eplucon_api.web_control import zone_key
+from .eplucon_api.web_control import ControlState, zone_key
 from .web_coordinator import EpluconWebCoordinator
 from .zone_entity import EpluconZoneEntity, zones_of
 
@@ -256,18 +256,30 @@ class EpluconZoneClimate(EpluconZoneEntity, ClimateEntity):
         self._web_seen = self._web_value()
         self.async_on_remove(self._web.async_add_listener(self._handle_web_update))
 
+    @staticmethod
+    def _changed(seen, value) -> bool:
+        """Whether a source's new value is a change of the zone's target.
+
+        Losing a source (None) or getting it back says nothing about the
+        target: after a portal outage the zones page may still show what it
+        had before, while the API has followed a change made meanwhile.
+        """
+        return seen is not None and value is not None and seen != value
+
     @callback
     def _handle_coordinator_update(self) -> None:
         reported = self._api_target()
-        if reported != self._api_seen:
-            self._api_seen, self._api_at = reported, time.monotonic()
+        if self._changed(self._api_seen, reported):
+            self._api_at = time.monotonic()
+        self._api_seen = reported
         super()._handle_coordinator_update()
 
     @callback
     def _handle_web_update(self) -> None:
         value = self._web_value()
-        if value != self._web_seen:
-            self._web_seen, self._web_at = value, time.monotonic()
+        if self._changed(self._web_seen, value):
+            self._web_at = time.monotonic()
+        self._web_seen = value
         self.async_write_ha_state()
 
     def _api_target(self) -> float | None:
@@ -278,7 +290,7 @@ class EpluconZoneClimate(EpluconZoneEntity, ClimateEntity):
         state = self._web_state()
         return None if state is None else state.value
 
-    def _web_state(self):
+    def _web_state(self) -> ControlState | None:
         """The zone's form as web control last read it, if web control works."""
         if not self._web.last_update_success:
             return None

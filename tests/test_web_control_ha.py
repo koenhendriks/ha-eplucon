@@ -365,6 +365,14 @@ ZONE_CONTROLLER = {
 }
 
 
+def report_zone_target(hass, entry, zone_id: int, set_temperature) -> None:
+    """Have the API report a new target for one zone, as after a panel change."""
+    api = hass.data[DOMAIN][entry.entry_id]
+    controller = next(d for d in api.data if d.id == ZONE_CONTROLLER_ID)
+    next(z for z in controller.zones if z.id == zone_id).set_temperature = set_temperature
+    api.async_update_listeners()
+
+
 def zone_climate_id(hass, zone_id: int) -> str | None:
     return er.async_get(hass).async_get_entity_id(
         "climate", DOMAIN, f"{ZONE_CONTROLLER_ID}_zone_{zone_id}_climate"
@@ -471,6 +479,23 @@ async def test_unreadable_zones_keep_their_readings_but_refuse_a_target(hass):
         )
     write.assert_not_called()
     assert hass.states.get(entity_id(hass, "number", "indoor_temperature")).state == "22.4"
+
+
+async def test_zones_readable_only_after_setup_keep_the_api_target(hass):
+    with patch(
+        "custom_components.eplucon.eplucon_api.web_control.EpluconWebControl.async_get_zone_states",
+        AsyncMock(side_effect=WebControlError("portal changed")),
+    ):
+        entry = await set_up(hass, devices=MOCK_DEVICES + [ZONE_CONTROLLER], **WEB)
+    target = zone_climate_id(hass, 3221)
+    web = hass.data[DOMAIN][WEB_COORDINATORS][entry.entry_id]
+
+    # A schedule step the API reports, then the zones page can be read.
+    report_zone_target(hass, entry, 3221, 18)
+    await web.async_refresh()
+
+    assert web.state(ZONE_CONTROLLER["account_module_index"], "zone_3221").value == 240
+    assert hass.states.get(target).attributes["temperature"] == 18
     sensor = er.async_get(hass).async_get_entity_id(
         "sensor", DOMAIN, f"{ZONE_CONTROLLER_ID}_zone_3221_zone_temperature"
     )
@@ -583,6 +608,23 @@ async def test_a_write_refreshes_the_api_after_the_portal(hass):
 
     assert calls == ["web", "api"]
 
+    # A heat pump setting shows its value through web control alone.
+    calls.clear()
+    await hass.services.async_call(
+        "number",
+        "set_value",
+        {"entity_id": entity_id(hass, "number", "indoor_temperature"), "value": 19},
+        blocking=True,
+    )
+    with (
+        patch.object(web, "async_request_refresh", record_web),
+        patch.object(api, "async_request_refresh", record_api),
+    ):
+        async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=42))
+        await hass.async_block_till_done()
+
+    assert calls == ["web"]
+
 
 async def test_a_web_outage_keeps_the_zone_readings(hass):
     from homeassistant.exceptions import HomeAssistantError
@@ -608,3 +650,12 @@ async def test_a_web_outage_keeps_the_zone_readings(hass):
         )
     # The heat pump's own controls do go unavailable, as before.
     assert hass.states.get(entity_id(hass, "number", "indoor_temperature")).state == "unavailable"
+
+    # The API follows a change made during the outage; the portal, back,
+    # still shows what it had. Getting the portal back is not a change.
+    report_zone_target(hass, entry, 3221, 18)
+    await web.async_refresh()
+
+    assert web.last_update_success
+    assert web.state(ZONE_CONTROLLER["account_module_index"], "zone_3221").value == 240
+    assert hass.states.get(target).attributes["temperature"] == 18

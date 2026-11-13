@@ -27,6 +27,7 @@ from .eplucon_api.web_control import (
     WebControlAuthError,
     WebControlError,
     WebControlTwoFactorRequired,
+    is_zone_key,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -81,6 +82,9 @@ class EpluconWebCoordinator(DataUpdateCoordinator[WebData]):
         # (module_index, key) -> (value sent, monotonic deadline)
         self._pending: dict[tuple[str, str], tuple[float | int, float]] = {}
         self._refresh_unsub: Callable[[], None] | None = None
+        # Whether the refresh after a write includes the API: only zone
+        # thermostats show a written value through it.
+        self._refresh_api = False
         self._failing: set[str] = set()
         entry.async_on_unload(self._cancel_refresh)
 
@@ -188,18 +192,22 @@ class EpluconWebCoordinator(DataUpdateCoordinator[WebData]):
             self.data[module_index][key] = replace(self.data[module_index][key], value=value)
             self.async_update_listeners()
 
+        # A later write moves the refresh, which still covers earlier ones.
+        refresh_api = self._refresh_api or is_zone_key(key)
         self._cancel_refresh()
+        self._refresh_api = refresh_api
         self._refresh_unsub = async_call_later(self.hass, REFRESH_AFTER_WRITE, self._refresh)
 
     @callback
     def _refresh(self, _now) -> None:
         self._refresh_unsub = None
-        self.hass.async_create_task(self._async_refresh_after_write())
+        refresh_api, self._refresh_api = self._refresh_api, False
+        self.hass.async_create_task(self._async_refresh_after_write(refresh_api))
 
-    async def _async_refresh_after_write(self) -> None:
+    async def _async_refresh_after_write(self, refresh_api: bool) -> None:
         # The API last, so its values are at least as new as the portal's.
         await self.async_request_refresh()
-        if self._api_coordinator is not None:
+        if refresh_api and self._api_coordinator is not None:
             await self._api_coordinator.async_request_refresh()
 
     @callback

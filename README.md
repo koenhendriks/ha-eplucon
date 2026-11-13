@@ -140,6 +140,10 @@ only shows which (Heat or Cool) and whether the zone is calling for it; change
 the heat pump's operation mode to switch. Schedules and the portal's temporary
 raise (*Tijdelijke verhoging*) are not available from Home Assistant.
 
+**Setting a zone's target from Home Assistant turns off its schedule.** There
+is no way back to the schedule from Home Assistant yet: pick the schedule again
+on the portal or the control panel.
+
 Settings are read from the portal every 5 minutes. A change shows in Home
 Assistant right away and on the portal within about 20 seconds. Allowed
 values come from the portal's own dialogs. A zone thermostat's readings come

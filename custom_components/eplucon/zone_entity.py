@@ -4,7 +4,6 @@ import logging
 from collections.abc import Iterable, Iterator
 from typing import Optional
 
-from dacite import from_dict
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN, MANUFACTURER, ZONE_CONTROLLER_TYPES
@@ -14,15 +13,9 @@ from .eplucon_api.DTO.ZoneDTO import ZoneDTO
 _LOGGER = logging.getLogger(__name__)
 
 
-def zones_of(devices: Iterable[DeviceDTO | dict] | None) -> Iterator[tuple[DeviceDTO, ZoneDTO]]:
-    """Every zone of every zone controller, with its controller.
-
-    Takes the API coordinator's data, whose devices may still be the dicts
-    stored in the config entry.
-    """
+def zones_of(devices: Iterable[DeviceDTO] | None) -> Iterator[tuple[DeviceDTO, ZoneDTO]]:
+    """Every zone of every zone controller in the API coordinator's data, with its controller."""
     for device in devices or []:
-        if isinstance(device, dict):
-            device = from_dict(data_class=DeviceDTO, data=device)
         if device.type in ZONE_CONTROLLER_TYPES:
             for zone in device.zones or []:
                 yield device, zone
