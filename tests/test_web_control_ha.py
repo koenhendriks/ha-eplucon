@@ -479,6 +479,10 @@ async def test_unreadable_zones_keep_their_readings_but_refuse_a_target(hass):
         )
     write.assert_not_called()
     assert hass.states.get(entity_id(hass, "number", "indoor_temperature")).state == "22.4"
+    sensor = er.async_get(hass).async_get_entity_id(
+        "sensor", DOMAIN, f"{ZONE_CONTROLLER_ID}_zone_3221_zone_temperature"
+    )
+    assert hass.states.get(sensor).state == "23.2"
 
 
 async def test_zones_readable_only_after_setup_keep_the_api_target(hass):
@@ -496,10 +500,6 @@ async def test_zones_readable_only_after_setup_keep_the_api_target(hass):
 
     assert web.state(ZONE_CONTROLLER["account_module_index"], "zone_3221").value == 240
     assert hass.states.get(target).attributes["temperature"] == 18
-    sensor = er.async_get(hass).async_get_entity_id(
-        "sensor", DOMAIN, f"{ZONE_CONTROLLER_ID}_zone_3221_zone_temperature"
-    )
-    assert hass.states.get(sensor).state == "23.2"
 
 
 async def test_zones_only_account_gets_zone_thermostats(hass):
