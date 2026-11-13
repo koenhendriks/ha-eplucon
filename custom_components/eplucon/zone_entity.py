@@ -1,15 +1,24 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Iterable, Iterator
 from typing import Optional
 
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, MANUFACTURER
+from .const import DOMAIN, MANUFACTURER, ZONE_CONTROLLER_TYPES
 from .eplucon_api.DTO.DeviceDTO import DeviceDTO
 from .eplucon_api.DTO.ZoneDTO import ZoneDTO
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def zones_of(devices: Iterable[DeviceDTO] | None) -> Iterator[tuple[DeviceDTO, ZoneDTO]]:
+    """Every zone of every zone controller in the API coordinator's data, with its controller."""
+    for device in devices or []:
+        if device.type in ZONE_CONTROLLER_TYPES:
+            for zone in device.zones or []:
+                yield device, zone
 
 
 class EpluconZoneEntity(CoordinatorEntity):

@@ -1,4 +1,4 @@
-"""Polling and writing heat pump settings through the portal website."""
+"""Polling and writing heat pump and zone settings through the portal website."""
 
 from __future__ import annotations
 
@@ -27,6 +27,7 @@ from .eplucon_api.web_control import (
     WebControlAuthError,
     WebControlError,
     WebControlTwoFactorRequired,
+    is_zone_key,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -51,7 +52,10 @@ def session_store(hass: HomeAssistant) -> Store:
 
 
 class EpluconWebCoordinator(DataUpdateCoordinator[WebData]):
-    """Settings of every heat pump, keyed by account_module_index."""
+    """Settings of every heat pump and zone controller, keyed by account_module_index.
+
+    A zone controller's settings are its zones' setpoints, keyed `zone_<id>`.
+    """
 
     def __init__(
         self,
@@ -59,6 +63,8 @@ class EpluconWebCoordinator(DataUpdateCoordinator[WebData]):
         entry: ConfigEntry,
         client: EpluconWebControl,
         heat_pumps: list[DeviceDTO],
+        zone_controllers: list[DeviceDTO] | None = None,
+        api_coordinator: DataUpdateCoordinator | None = None,
     ) -> None:
         super().__init__(
             hass,
@@ -69,9 +75,16 @@ class EpluconWebCoordinator(DataUpdateCoordinator[WebData]):
         )
         self.client = client
         self.heat_pumps = heat_pumps
+        self.zone_controllers = zone_controllers or []
+        # Refreshed after a write as well: entities that show API values, such
+        # as a zone's target, would otherwise wait a whole update interval.
+        self._api_coordinator = api_coordinator
         # (module_index, key) -> (value sent, monotonic deadline)
         self._pending: dict[tuple[str, str], tuple[float | int, float]] = {}
         self._refresh_unsub: Callable[[], None] | None = None
+        # Whether the refresh after a write includes the API: only zone
+        # thermostats show a written value through it.
+        self._refresh_api = False
         self._failing: set[str] = set()
         entry.async_on_unload(self._cancel_refresh)
 
@@ -79,10 +92,13 @@ class EpluconWebCoordinator(DataUpdateCoordinator[WebData]):
         data: WebData = {}
         failures: list[Exception] = []
         try:
-            for device in self.heat_pumps:
+            modules = [(d, self.client.async_get_states) for d in self.heat_pumps] + [
+                (d, self.client.async_get_zone_states) for d in self.zone_controllers
+            ]
+            for device, read in modules:
                 index = device.account_module_index
                 try:
-                    data[index] = await self.client.async_get_states(index)
+                    data[index] = await read(index)
                 except (WebControlError, aiohttp.ClientError, TimeoutError) as err:
                     # Login problems concern every heat pump: handled below.
                     if isinstance(err, WebControlAuthError):
@@ -111,7 +127,7 @@ class EpluconWebCoordinator(DataUpdateCoordinator[WebData]):
             return
         self._failing.add(device.account_module_index)
         _LOGGER.warning(
-            "Eplucon web control can't read heat pump %s (%s), its controls stay "
+            "Eplucon web control can't read module %s (%s), its controls stay "
             "unavailable until it can: %s",
             device.name,
             device.id,
@@ -137,6 +153,11 @@ class EpluconWebCoordinator(DataUpdateCoordinator[WebData]):
             severity=ir.IssueSeverity.ERROR,
             translation_key=issue_id,
         )
+
+    def is_pending(self, module_index: str, key: str) -> bool:
+        """Whether a written value still waits for the portal to report it."""
+        pending = self._pending.get((module_index, key))
+        return pending is not None and time.monotonic() <= pending[1]
 
     def value(self, module_index: str, key: str) -> float | int | None:
         state = self.state(module_index, key)
@@ -171,13 +192,23 @@ class EpluconWebCoordinator(DataUpdateCoordinator[WebData]):
             self.data[module_index][key] = replace(self.data[module_index][key], value=value)
             self.async_update_listeners()
 
+        # A later write moves the refresh, which still covers earlier ones.
+        refresh_api = self._refresh_api or is_zone_key(key)
         self._cancel_refresh()
+        self._refresh_api = refresh_api
         self._refresh_unsub = async_call_later(self.hass, REFRESH_AFTER_WRITE, self._refresh)
 
     @callback
     def _refresh(self, _now) -> None:
         self._refresh_unsub = None
-        self.hass.async_create_task(self.async_request_refresh())
+        refresh_api, self._refresh_api = self._refresh_api, False
+        self.hass.async_create_task(self._async_refresh_after_write(refresh_api))
+
+    async def _async_refresh_after_write(self, refresh_api: bool) -> None:
+        # The API last, so its values are at least as new as the portal's.
+        await self.async_request_refresh()
+        if refresh_api and self._api_coordinator is not None:
+            await self._api_coordinator.async_request_refresh()
 
     @callback
     def _cancel_refresh(self) -> None:

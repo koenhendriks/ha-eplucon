@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head><meta name="csrf-token" content="mock-csrf-token"><title>Zones</title></head>
+<body>
+<!-- The constant temperature and temporary raise forms of the real /e-control/zones page,
+     with the mock zones' ids, the mock module index and a mock CSRF token. -->
+<div class="modal" id="zoneModalConstantTemperature3221">
+<h5 class="modal-title">Zone 1</h5>
+<form data-id="3221" action="#" method="post" data-action="https://portaal.eplucon.nl/e-control/set_constant_temp?account_module_index=2aa222a2a2a222a2aa2222222aa22a22">
+	<input type="hidden" name="_token" value="mock-csrf-token" autocomplete="off">	<input type="hidden" name="active_schedule" value="0"/>
+	<input type="hidden" name="mode" value="constantTemp"/>
+	<input type="hidden" name="mode_id" value="491"/>
+	<input type="hidden" name="zone_id" value="110"/>
+	<input type="hidden" name="parent_id" value="110"/>
+	<div class="control-range">
+		<div class="form-group">
+			<div class="configured-value">
+				<span id="configured-value-3221-item">24.0</span>
+			</div>
+		</div>
+		<div class="form-group">
+			<div class="d-flex justify-content-between">
+				<div>
+					Min: 5°
+				</div>
+				<div>
+					Max: 35°
+				</div>
+			</div>
+		</div>
+		<div class="form-group">
+			<input data-format="7" data-target="#configured-value-3221-item" id="range-3221-item" value="240" step="1" min="50" max="350" type="range" class="form-control-range" name="constant_temp">
+		</div>
+		<div class="d-flex align-items-center justify-content-center range-controls" data-target="#range-3221-item">
+			<a href="#" class="decrease">
+				<i class="fa fa-minus-circle" aria-hidden="true"></i>
+			</a>
+			<a href="#" class="increase">
+				<i class="fa fa-plus-circle" aria-hidden="true"></i>
+			</a>
+		</div>
+	</div>
+	<div class="modal-footer emodule-save-action-btn-wrapper">
+		<button type="button" class="btn btn-secondary goto" data-target=".timelimit-container">Tijdelijke verhoging</button>
+		<button type="button" class="btn btn-primary">
+			<span>Opslaan</span>
+		</button>
+	</div>
+</form>                </div>
+                <div class="zone-template-container timelimit-container d-none">
+                    <p class="control-title bg-settings fs-22 font-weight-bold text-center">Tijdelijke verhoging</p>
+                    <form data-id="3221" action="#" method="post" data-action="https://portaal.eplucon.nl/e-control/set_constant_temp?account_module_index=2aa222a2a2a222a2aa2222222aa22a22">
+	<input type="hidden" name="_token" value="mock-csrf-token" autocomplete="off">	<input type="hidden" name="active_schedule" value="0"/>
+	<input type="hidden" name="mode" value="timeLimit"/>
+	<input type="hidden" name="constant_temp" value="240"/>
+	<input type="hidden" name="mode_id" value="491"/>
+	<input type="hidden" name="zone_id" value="110"/>
+	<input type="hidden" name="parent_id" value="110"/>
+	<div class="control-range-wrapper">
+		<div class="control-range group">
+			<div class="form-group">
+				<div class="configured-value">
+					<span class="configured-value-label">Uur</span>
+					<span id="configured-value-3221-timelimit1-item">1</span>
+				</div>
+			</div>
+			<div class="form-group">
+				<input data-target="#configured-value-3221-timelimit1-item" id="range-3221-timelimit1-item" value="1" step="1" min="1" max="23" type="range" class="form-control-range" name="hours">
+			</div>
+			<div class="d-flex align-items-center justify-content-center range-controls" data-target="#range-3221-timelimit1-item">
+				<a href="#" class="decrease">
+					<i class="fa fa-minus-circle" aria-hidden="true"></i>
+				</a>
+				<a href="#" class="increase">
+					<i class="fa fa-plus-circle" aria-hidden="true"></i>
+				</a>
+			</div>
+		</div>
+		<div class="control-range group">
+			<div class="form-group">
+				<div class="configured-value">
+					<span class="configured-value-label">Minuten</span>
+					<span id="configured-value-3221-timelimit2-item">0</span>
+				</div>
+			</div>
+			<div class="form-group">
+				<input data-target="#configured-value-3221-timelimit2-item" id="range-3221-timelimit2-item" value="0" step="1" min="1" max="59" type="range" class="form-control-range" name="minutes">
+			</div>
+			<div class="d-flex align-items-center justify-content-center range-controls" data-target="#range-3221-timelimit2-item">
+				<a href="#" class="decrease">
+					<i class="fa fa-minus-circle" aria-hidden="true"></i>
+				</a>
+				<a href="#" class="increase">
+					<i class="fa fa-plus-circle" aria-hidden="true"></i>
+				</a>
+			</div>
+		</div>
+	</div>
+	<div class="modal-footer emodule-save-action-btn-wrapper">
+		<button type="button" class="btn btn-danger goto" data-target=".temperature-container">Vorige</button>
+		<button type="button" class="btn btn-primary">
+			<span>Opslaan</span>
+		</button>
+	</div>
+</form>
+</div>
+<div class="modal" id="zoneModalConstantTemperature3222">
+<h5 class="modal-title">Zone 2</h5>
+<form data-id="3222" action="#" method="post" data-action="https://portaal.eplucon.nl/e-control/set_constant_temp?account_module_index=2aa222a2a2a222a2aa2222222aa22a22">
+	<input type="hidden" name="_token" value="mock-csrf-token" autocomplete="off">	<input type="hidden" name="active_schedule" value="0"/>
+	<input type="hidden" name="mode" value="constantTemp"/>
+	<input type="hidden" name="mode_id" value="501"/>
+	<input type="hidden" name="zone_id" value="111"/>
+	<input type="hidden" name="parent_id" value="111"/>
+	<div class="control-range">
+		<div class="form-group">
+			<div class="configured-value">
+				<span id="configured-value-3222-item">24.0</span>
+			</div>
+		</div>
+		<div class="form-group">
+			<div class="d-flex justify-content-between">
+				<div>
+					Min: 5°
+				</div>
+				<div>
+					Max: 35°
+				</div>
+			</div>
+		</div>
+		<div class="form-group">
+			<input data-format="7" data-target="#configured-value-3222-item" id="range-3222-item" value="240" step="1" min="50" max="350" type="range" class="form-control-range" name="constant_temp">
+		</div>
+		<div class="d-flex align-items-center justify-content-center range-controls" data-target="#range-3222-item">
+			<a href="#" class="decrease">
+				<i class="fa fa-minus-circle" aria-hidden="true"></i>
+			</a>
+			<a href="#" class="increase">
+				<i class="fa fa-plus-circle" aria-hidden="true"></i>
+			</a>
+		</div>
+	</div>
+	<div class="modal-footer emodule-save-action-btn-wrapper">
+		<button type="button" class="btn btn-secondary goto" data-target=".timelimit-container">Tijdelijke verhoging</button>
+		<button type="button" class="btn btn-primary">
+			<span>Opslaan</span>
+		</button>
+	</div>
+</form>                </div>
+                <div class="zone-template-container timelimit-container d-none">
+                    <p class="control-title bg-settings fs-22 font-weight-bold text-center">Tijdelijke verhoging</p>
+                    <form data-id="3222" action="#" method="post" data-action="https://portaal.eplucon.nl/e-control/set_constant_temp?account_module_index=2aa222a2a2a222a2aa2222222aa22a22">
+	<input type="hidden" name="_token" value="mock-csrf-token" autocomplete="off">	<input type="hidden" name="active_schedule" value="0"/>
+	<input type="hidden" name="mode" value="timeLimit"/>
+	<input type="hidden" name="constant_temp" value="240"/>
+	<input type="hidden" name="mode_id" value="501"/>
+	<input type="hidden" name="zone_id" value="111"/>
+	<input type="hidden" name="parent_id" value="111"/>
+	<div class="control-range-wrapper">
+		<div class="control-range group">
+			<div class="form-group">
+				<div class="configured-value">
+					<span class="configured-value-label">Uur</span>
+					<span id="configured-value-3222-timelimit1-item">1</span>
+				</div>
+			</div>
+			<div class="form-group">
+				<input data-target="#configured-value-3222-timelimit1-item" id="range-3222-timelimit1-item" value="1" step="1" min="1" max="23" type="range" class="form-control-range" name="hours">
+			</div>
+			<div class="d-flex align-items-center justify-content-center range-controls" data-target="#range-3222-timelimit1-item">
+				<a href="#" class="decrease">
+					<i class="fa fa-minus-circle" aria-hidden="true"></i>
+				</a>
+				<a href="#" class="increase">
+					<i class="fa fa-plus-circle" aria-hidden="true"></i>
+				</a>
+			</div>
+		</div>
+		<div class="control-range group">
+			<div class="form-group">
+				<div class="configured-value">
+					<span class="configured-value-label">Minuten</span>
+					<span id="configured-value-3222-timelimit2-item">0</span>
+				</div>
+			</div>
+			<div class="form-group">
+				<input data-target="#configured-value-3222-timelimit2-item" id="range-3222-timelimit2-item" value="0" step="1" min="1" max="59" type="range" class="form-control-range" name="minutes">
+			</div>
+			<div class="d-flex align-items-center justify-content-center range-controls" data-target="#range-3222-timelimit2-item">
+				<a href="#" class="decrease">
+					<i class="fa fa-minus-circle" aria-hidden="true"></i>
+				</a>
+				<a href="#" class="increase">
+					<i class="fa fa-plus-circle" aria-hidden="true"></i>
+				</a>
+			</div>
+		</div>
+	</div>
+	<div class="modal-footer emodule-save-action-btn-wrapper">
+		<button type="button" class="btn btn-danger goto" data-target=".temperature-container">Vorige</button>
+		<button type="button" class="btn btn-primary">
+			<span>Opslaan</span>
+		</button>
+	</div>
+</form>
+</div>
+<div class="modal" id="zoneModalConstantTemperature3223">
+<h5 class="modal-title">Zone 3</h5>
+<form data-id="3223" action="#" method="post" data-action="https://portaal.eplucon.nl/e-control/set_constant_temp?account_module_index=2aa222a2a2a222a2aa2222222aa22a22">
+	<input type="hidden" name="_token" value="mock-csrf-token" autocomplete="off">	<input type="hidden" name="active_schedule" value="0"/>
+	<input type="hidden" name="mode" value="constantTemp"/>
+	<input type="hidden" name="mode_id" value="511"/>
+	<input type="hidden" name="zone_id" value="112"/>
+	<input type="hidden" name="parent_id" value="112"/>
+	<div class="control-range">
+		<div class="form-group">
+			<div class="configured-value">
+				<span id="configured-value-3223-item">24.0</span>
+			</div>
+		</div>
+		<div class="form-group">
+			<div class="d-flex justify-content-between">
+				<div>
+					Min: 5°
+				</div>
+				<div>
+					Max: 35°
+				</div>
+			</div>
+		</div>
+		<div class="form-group">
+			<input data-format="7" data-target="#configured-value-3223-item" id="range-3223-item" value="240" step="1" min="50" max="350" type="range" class="form-control-range" name="constant_temp">
+		</div>
+		<div class="d-flex align-items-center justify-content-center range-controls" data-target="#range-3223-item">
+			<a href="#" class="decrease">
+				<i class="fa fa-minus-circle" aria-hidden="true"></i>
+			</a>
+			<a href="#" class="increase">
+				<i class="fa fa-plus-circle" aria-hidden="true"></i>
+			</a>
+		</div>
+	</div>
+	<div class="modal-footer emodule-save-action-btn-wrapper">
+		<button type="button" class="btn btn-secondary goto" data-target=".timelimit-container">Tijdelijke verhoging</button>
+		<button type="button" class="btn btn-primary">
+			<span>Opslaan</span>
+		</button>
+	</div>
+</form>                </div>
+                <div class="zone-template-container timelimit-container d-none">
+                    <p class="control-title bg-settings fs-22 font-weight-bold text-center">Tijdelijke verhoging</p>
+                    <form data-id="3223" action="#" method="post" data-action="https://portaal.eplucon.nl/e-control/set_constant_temp?account_module_index=2aa222a2a2a222a2aa2222222aa22a22">
+	<input type="hidden" name="_token" value="mock-csrf-token" autocomplete="off">	<input type="hidden" name="active_schedule" value="0"/>
+	<input type="hidden" name="mode" value="timeLimit"/>
+	<input type="hidden" name="constant_temp" value="240"/>
+	<input type="hidden" name="mode_id" value="511"/>
+	<input type="hidden" name="zone_id" value="112"/>
+	<input type="hidden" name="parent_id" value="112"/>
+	<div class="control-range-wrapper">
+		<div class="control-range group">
+			<div class="form-group">
+				<div class="configured-value">
+					<span class="configured-value-label">Uur</span>
+					<span id="configured-value-3223-timelimit1-item">1</span>
+				</div>
+			</div>
+			<div class="form-group">
+				<input data-target="#configured-value-3223-timelimit1-item" id="range-3223-timelimit1-item" value="1" step="1" min="1" max="23" type="range" class="form-control-range" name="hours">
+			</div>
+			<div class="d-flex align-items-center justify-content-center range-controls" data-target="#range-3223-timelimit1-item">
+				<a href="#" class="decrease">
+					<i class="fa fa-minus-circle" aria-hidden="true"></i>
+				</a>
+				<a href="#" class="increase">
+					<i class="fa fa-plus-circle" aria-hidden="true"></i>
+				</a>
+			</div>
+		</div>
+		<div class="control-range group">
+			<div class="form-group">
+				<div class="configured-value">
+					<span class="configured-value-label">Minuten</span>
+					<span id="configured-value-3223-timelimit2-item">0</span>
+				</div>
+			</div>
+			<div class="form-group">
+				<input data-target="#configured-value-3223-timelimit2-item" id="range-3223-timelimit2-item" value="0" step="1" min="1" max="59" type="range" class="form-control-range" name="minutes">
+			</div>
+			<div class="d-flex align-items-center justify-content-center range-controls" data-target="#range-3223-timelimit2-item">
+				<a href="#" class="decrease">
+					<i class="fa fa-minus-circle" aria-hidden="true"></i>
+				</a>
+				<a href="#" class="increase">
+					<i class="fa fa-plus-circle" aria-hidden="true"></i>
+				</a>
+			</div>
+		</div>
+	</div>
+	<div class="modal-footer emodule-save-action-btn-wrapper">
+		<button type="button" class="btn btn-danger goto" data-target=".temperature-container">Vorige</button>
+		<button type="button" class="btn btn-primary">
+			<span>Opslaan</span>
+		</button>
+	</div>
+</form>
+</div>
+<div class="modal" id="zoneModalConstantTemperature3224">
+<h5 class="modal-title">Zone 4</h5>
+<form data-id="3224" action="#" method="post" data-action="https://portaal.eplucon.nl/e-control/set_constant_temp?account_module_index=2aa222a2a2a222a2aa2222222aa22a22">
+	<input type="hidden" name="_token" value="mock-csrf-token" autocomplete="off">	<input type="hidden" name="active_schedule" value="0"/>
+	<input type="hidden" name="mode" value="constantTemp"/>
+	<input type="hidden" name="mode_id" value="531"/>
+	<input type="hidden" name="zone_id" value="114"/>
+	<input type="hidden" name="parent_id" value="114"/>
+	<div class="control-range">
+		<div class="form-group">
+			<div class="configured-value">
+				<span id="configured-value-3224-item">24.5</span>
+			</div>
+		</div>
+		<div class="form-group">
+			<div class="d-flex justify-content-between">
+				<div>
+					Min: 5°
+				</div>
+				<div>
+					Max: 35°
+				</div>
+			</div>
+		</div>
+		<div class="form-group">
+			<input data-format="7" data-target="#configured-value-3224-item" id="range-3224-item" value="245" step="1" min="50" max="350" type="range" class="form-control-range" name="constant_temp">
+		</div>
+		<div class="d-flex align-items-center justify-content-center range-controls" data-target="#range-3224-item">
+			<a href="#" class="decrease">
+				<i class="fa fa-minus-circle" aria-hidden="true"></i>
+			</a>
+			<a href="#" class="increase">
+				<i class="fa fa-plus-circle" aria-hidden="true"></i>
+			</a>
+		</div>
+	</div>
+	<div class="modal-footer emodule-save-action-btn-wrapper">
+		<button type="button" class="btn btn-secondary goto" data-target=".timelimit-container">Tijdelijke verhoging</button>
+		<button type="button" class="btn btn-primary">
+			<span>Opslaan</span>
+		</button>
+	</div>
+</form>                </div>
+                <div class="zone-template-container timelimit-container d-none">
+                    <p class="control-title bg-settings fs-22 font-weight-bold text-center">Tijdelijke verhoging</p>
+                    <form data-id="3224" action="#" method="post" data-action="https://portaal.eplucon.nl/e-control/set_constant_temp?account_module_index=2aa222a2a2a222a2aa2222222aa22a22">
+	<input type="hidden" name="_token" value="mock-csrf-token" autocomplete="off">	<input type="hidden" name="active_schedule" value="0"/>
+	<input type="hidden" name="mode" value="timeLimit"/>
+	<input type="hidden" name="constant_temp" value="245"/>
+	<input type="hidden" name="mode_id" value="531"/>
+	<input type="hidden" name="zone_id" value="114"/>
+	<input type="hidden" name="parent_id" value="114"/>
+	<div class="control-range-wrapper">
+		<div class="control-range group">
+			<div class="form-group">
+				<div class="configured-value">
+					<span class="configured-value-label">Uur</span>
+					<span id="configured-value-3224-timelimit1-item">1</span>
+				</div>
+			</div>
+			<div class="form-group">
+				<input data-target="#configured-value-3224-timelimit1-item" id="range-3224-timelimit1-item" value="1" step="1" min="1" max="23" type="range" class="form-control-range" name="hours">
+			</div>
+			<div class="d-flex align-items-center justify-content-center range-controls" data-target="#range-3224-timelimit1-item">
+				<a href="#" class="decrease">
+					<i class="fa fa-minus-circle" aria-hidden="true"></i>
+				</a>
+				<a href="#" class="increase">
+					<i class="fa fa-plus-circle" aria-hidden="true"></i>
+				</a>
+			</div>
+		</div>
+		<div class="control-range group">
+			<div class="form-group">
+				<div class="configured-value">
+					<span class="configured-value-label">Minuten</span>
+					<span id="configured-value-3224-timelimit2-item">0</span>
+				</div>
+			</div>
+			<div class="form-group">
+				<input data-target="#configured-value-3224-timelimit2-item" id="range-3224-timelimit2-item" value="0" step="1" min="1" max="59" type="range" class="form-control-range" name="minutes">
+			</div>
+			<div class="d-flex align-items-center justify-content-center range-controls" data-target="#range-3224-timelimit2-item">
+				<a href="#" class="decrease">
+					<i class="fa fa-minus-circle" aria-hidden="true"></i>
+				</a>
+				<a href="#" class="increase">
+					<i class="fa fa-plus-circle" aria-hidden="true"></i>
+				</a>
+			</div>
+		</div>
+	</div>
+	<div class="modal-footer emodule-save-action-btn-wrapper">
+		<button type="button" class="btn btn-danger goto" data-target=".temperature-container">Vorige</button>
+		<button type="button" class="btn btn-primary">
+			<span>Opslaan</span>
+		</button>
+	</div>
+</form>
+</div>
+<div class="modal" id="zoneModalConstantTemperature3225">
+<h5 class="modal-title">Zone 5</h5>
+<form data-id="3225" action="#" method="post" data-action="https://portaal.eplucon.nl/e-control/set_constant_temp?account_module_index=2aa222a2a2a222a2aa2222222aa22a22">
+	<input type="hidden" name="_token" value="mock-csrf-token" autocomplete="off">	<input type="hidden" name="active_schedule" value="0"/>
+	<input type="hidden" name="mode" value="constantTemp"/>
+	<input type="hidden" name="mode_id" value="541"/>
+	<input type="hidden" name="zone_id" value="115"/>
+	<input type="hidden" name="parent_id" value="115"/>
+	<div class="control-range">
+		<div class="form-group">
+			<div class="configured-value">
+				<span id="configured-value-3225-item">24.0</span>
+			</div>
+		</div>
+		<div class="form-group">
+			<div class="d-flex justify-content-between">
+				<div>
+					Min: 5°
+				</div>
+				<div>
+					Max: 35°
+				</div>
+			</div>
+		</div>
+		<div class="form-group">
+			<input data-format="7" data-target="#configured-value-3225-item" id="range-3225-item" value="240" step="1" min="50" max="350" type="range" class="form-control-range" name="constant_temp">
+		</div>
+		<div class="d-flex align-items-center justify-content-center range-controls" data-target="#range-3225-item">
+			<a href="#" class="decrease">
+				<i class="fa fa-minus-circle" aria-hidden="true"></i>
+			</a>
+			<a href="#" class="increase">
+				<i class="fa fa-plus-circle" aria-hidden="true"></i>
+			</a>
+		</div>
+	</div>
+	<div class="modal-footer emodule-save-action-btn-wrapper">
+		<button type="button" class="btn btn-secondary goto" data-target=".timelimit-container">Tijdelijke verhoging</button>
+		<button type="button" class="btn btn-primary">
+			<span>Opslaan</span>
+		</button>
+	</div>
+</form>                </div>
+                <div class="zone-template-container timelimit-container d-none">
+                    <p class="control-title bg-settings fs-22 font-weight-bold text-center">Tijdelijke verhoging</p>
+                    <form data-id="3225" action="#" method="post" data-action="https://portaal.eplucon.nl/e-control/set_constant_temp?account_module_index=2aa222a2a2a222a2aa2222222aa22a22">
+	<input type="hidden" name="_token" value="mock-csrf-token" autocomplete="off">	<input type="hidden" name="active_schedule" value="0"/>
+	<input type="hidden" name="mode" value="timeLimit"/>
+	<input type="hidden" name="constant_temp" value="240"/>
+	<input type="hidden" name="mode_id" value="541"/>
+	<input type="hidden" name="zone_id" value="115"/>
+	<input type="hidden" name="parent_id" value="115"/>
+	<div class="control-range-wrapper">
+		<div class="control-range group">
+			<div class="form-group">
+				<div class="configured-value">
+					<span class="configured-value-label">Uur</span>
+					<span id="configured-value-3225-timelimit1-item">1</span>
+				</div>
+			</div>
+			<div class="form-group">
+				<input data-target="#configured-value-3225-timelimit1-item" id="range-3225-timelimit1-item" value="1" step="1" min="1" max="23" type="range" class="form-control-range" name="hours">
+			</div>
+			<div class="d-flex align-items-center justify-content-center range-controls" data-target="#range-3225-timelimit1-item">
+				<a href="#" class="decrease">
+					<i class="fa fa-minus-circle" aria-hidden="true"></i>
+				</a>
+				<a href="#" class="increase">
+					<i class="fa fa-plus-circle" aria-hidden="true"></i>
+				</a>
+			</div>
+		</div>
+		<div class="control-range group">
+			<div class="form-group">
+				<div class="configured-value">
+					<span class="configured-value-label">Minuten</span>
+					<span id="configured-value-3225-timelimit2-item">0</span>
+				</div>
+			</div>
+			<div class="form-group">
+				<input data-target="#configured-value-3225-timelimit2-item" id="range-3225-timelimit2-item" value="0" step="1" min="1" max="59" type="range" class="form-control-range" name="minutes">
+			</div>
+			<div class="d-flex align-items-center justify-content-center range-controls" data-target="#range-3225-timelimit2-item">
+				<a href="#" class="decrease">
+					<i class="fa fa-minus-circle" aria-hidden="true"></i>
+				</a>
+				<a href="#" class="increase">
+					<i class="fa fa-plus-circle" aria-hidden="true"></i>
+				</a>
+			</div>
+		</div>
+	</div>
+	<div class="modal-footer emodule-save-action-btn-wrapper">
+		<button type="button" class="btn btn-danger goto" data-target=".temperature-container">Vorige</button>
+		<button type="button" class="btn btn-primary">
+			<span>Opslaan</span>
+		</button>
+	</div>
+</form>
+</div>
+</body>
+</html>

@@ -5,8 +5,8 @@ Notes on how the Eplucon portal (`https://portaal.eplucon.nl`) exposes
 `zones_system_controller`), and how their target temperature is changed.
 
 Everything below was verified against a live production deployment on
-2026-07-13. Where a statement is inferred rather than directly
-observed, it is marked as such.
+2026-07-13, and the write path again on 2026-11-13 (section 4). Where a
+statement is inferred rather than directly observed, it is marked as such.
 
 ## Summary
 
@@ -215,6 +215,41 @@ safest.
 > session — it does not carry the CSRF/session cookies the `/e-control/*` write
 > route requires.
 
+### Where the form comes from (re-checked 2026-11-13)
+
+`GET /e-control/zones?account_module_index={zone controller}` returns the full
+zones page. Each zone has a dialog (`#zoneModalConstantTemperature{portalZoneId}`)
+with two forms posting to `set_constant_temp`, both with `data-id` set to the
+**portal** zone id (the API's `data[].id`):
+
+| `mode` | Fields after `_token` | Meaning |
+|---|---|---|
+| `constantTemp` | `active_schedule=0`, `mode`, `mode_id`, `zone_id`, `parent_id`, `constant_temp` (range input, `min=50 max=350 step=1`, value = current setpoint ×10) | "Constante temperatuur": hold this setpoint |
+| `timeLimit` | `active_schedule=0`, `mode`, `constant_temp` (hidden), `mode_id`, `zone_id`, `parent_id`, `hours`, `minutes` (ranges) | "Tijdelijke verhoging": temporary raise |
+
+The ids in the forms are the same as those in the API's `raw_data` (table in
+section 2), so the form is the single source for a write: it carries the CSRF
+token, the ids and the bounds. The portal JavaScript submits both forms with
+the same `saveTileData` function as the heat pump's settings dialogs (the form
+fields as `multipart/form-data` plus the `dataSerialize` and `data` copies),
+and the integration replays it the same way. A write of the current setpoint
+answered HTTP 200 / `1` and left the setpoint and mode unchanged. A write of
+20.6 °C (and back to 20.5 °C) through the integration's client showed in the
+zones page form and in the API's `set_temperature` at the same time, within
+7 s, and the zone stayed on `constantTemp`: the API does not lag the portal.
+
+Other answers of the zones page:
+
+| Request | Answer |
+|---|---|
+| No session | 302 to `/login` |
+| Index of the heat pump (not a zone controller) | 200, a zones page without any zone form |
+| Made-up index | HTTP 500 |
+| No `account_module_index` | 200, the zones page of the account's first zone controller |
+
+Schedules ("Programma's") are loaded separately from
+`GET /e-control/zones/{portalZoneId}/ajax/programs` and were not investigated.
+
 ## 4. Other zone web routes seen (not needed for temperature control)
 
 - `GET  /e-control/zones` — the HTML zones page (source of the forms above).
@@ -223,14 +258,22 @@ safest.
 - `POST /e-control/zones/store/{portalZoneId}` — rename / icon / master config;
   fields include `name`, `icon`, `is_master`, `description_id`, `internal_zone_id`.
 
-## 5. Implications for the HA integration
+## 5. How the HA integration uses this
 
-- **Reads** (all sensors) work with the existing Bearer-token client — just add a
-  `get_zones(module_id)` call and parse `raw_data`.
-- **Writes** (climate setpoint) need a **separate session-based path**: portal
-  username + password, cookie jar, CSRF handling. This is a new dependency
-  (credentials beyond the API token) and should be optional — read-only zone
-  entities still work with only the token.
-- The write is inherently a cloud round-trip through the portal UI's own route;
-  it may be more fragile than the documented API (CSRF token rotation, session
-  expiry, login honeypot changes).
+- **Reads** (all zone sensors, and the zone thermostat's readings and target)
+  use the Bearer-token client: `get_zones(module_id)` and `raw_data`.
+- **Writes** go through the optional web control login (see
+  [`web-control.md`](web-control.md)): portal username + password (and 2FA),
+  its own cookie jar and session handling. Each zone's setpoint is a web
+  control keyed `zone_{portalZoneId}`, with its value in tenths of a degree as
+  the form has it. The web control coordinator reads the zones page with the
+  heat pump dialogs every 5 minutes, and a write fetches it fresh first, so the
+  CSRF token and the bounds are current. Without the web login, zones stay
+  read-only.
+- The write is a cloud round-trip through the portal UI's own route; it may
+  be more fragile than the documented API (CSRF token rotation, session
+  expiry, login honeypot changes). If the zones page can't be read, the zone
+  thermostats keep their API readings and refuse a new target.
+- After a write, the integration refreshes the zones page and then the API
+  about 20 s later. Until the portal reports the value sent, the thermostat
+  shows that; after that, whichever source updated last.

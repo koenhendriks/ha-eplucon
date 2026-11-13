@@ -14,10 +14,12 @@ in Home Assistant, and its settings can be changed from dashboards and automatio
 
 - Monitor indoor temperature, vent RPM, brine circulation pump, and more in real-time.
 - Expose per-zone control panels of a zone controller (th-TOUCH) as devices, with
-  temperature, humidity, battery, signal and call-for-heat sensors (read-only).
+  temperature, humidity, battery, signal and call-for-heat sensors; with web
+  control on, each zone is also a thermostat whose target can be set.
 - Automatically update sensor data using Home Assistant's update coordinator.
 - Optionally control the heat pump (target temperature, operation mode, warm
-  water, heating and cooling) through the Eplucon portal website.
+  water, heating and cooling) and the zones' target temperatures through the
+  Eplucon portal website.
 
 ## Installation
 
@@ -82,9 +84,9 @@ Entities are named after their zone, so a zone called *Woonkamer* yields
 that drops out of the API (flat control-panel battery, lost wireless link) is
 reported as unavailable rather than as a zero or an `off`.
 
-These use the same API token; no extra credentials are required. Setting a zone's
-target temperature from Home Assistant is **not** supported: the Eplucon public API
-is read-only for zones, and the portal's write path needs a separate web login.
+These use the same API token; no extra credentials are required. The Eplucon
+public API is read-only for zones: to set a zone's target temperature, turn on
+[web control](#web-control-optional), which adds a thermostat to every zone.
 See [`docs/zones-api.md`](docs/zones-api.md) for the full API investigation.
 
 ## Web control (optional)
@@ -128,9 +130,25 @@ Each heat pump then gets these entities:
 
 <img src="docs/images/web-control-operation-mode.png" alt="Operation mode choices of the heat pump" width="380">
 
+Each zone of a zone controller (th-TOUCH) gets a **thermostat** (climate) on
+the zone's own device, named after the zone (`climate.woonkamer`). It shows the
+zone's temperature and humidity from the API and sets its target temperature
+(5-35 °C in steps of 0.1 °C) the way the portal's *Constante temperatuur*
+dialog does: the zone then holds that temperature, also when it was following
+a schedule. Zones heat or cool as the heat pump does, so the thermostat's mode
+only shows which (Heat or Cool) and whether the zone is calling for it; change
+the heat pump's operation mode to switch. Schedules and the portal's temporary
+raise (*Tijdelijke verhoging*) are not available from Home Assistant.
+
+**Setting a zone's target from Home Assistant turns off its schedule.** There
+is no way back to the schedule from Home Assistant yet: pick the schedule again
+on the portal or the control panel.
+
 Settings are read from the portal every 5 minutes. A change shows in Home
 Assistant right away and on the portal within about 20 seconds. Allowed
-values come from the portal's own dialogs.
+values come from the portal's own dialogs. A zone thermostat's readings come
+from the API: they stay available when the portal can't be read, and only
+setting the target is refused until it can.
 
 Because this uses the website rather than an API, a change to the Eplucon
 website can break it. If that happens, the read-only sensors keep working;
@@ -189,8 +207,9 @@ model a less tidy account:
 
 With mock data on, web control needs no portal either: fill in any e-mail
 address and password and the settings dialogs come from
-`mock/webcontrol/modal_<code>.json` (real dialogs, anonymised). Changes are kept
-in memory until Home Assistant restarts.
+`mock/webcontrol/modal_<code>.json` (real dialogs, anonymised) and the zone
+setpoints from `mock/webcontrol/zones.html` (the real zone forms, with the mock
+zones' ids). Changes are kept in memory until Home Assistant restarts.
 
 ### Testing web control against the real portal
 

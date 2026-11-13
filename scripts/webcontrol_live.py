@@ -2,11 +2,15 @@
 
     .venv/bin/python scripts/webcontrol_live.py read
     .venv/bin/python scripts/webcontrol_live.py set <control> <value>
+    EPLUCON_MODULE_INDEX=<zone controller> .venv/bin/python scripts/webcontrol_live.py zones
+    EPLUCON_MODULE_INDEX=<zone controller> .venv/bin/python scripts/webcontrol_live.py set zone_<id> <tenths>
 
 Credentials come from prod.env (EPLUCON_EMAIL, EPLUCON_PASSWORD and, for 2FA
 accounts, EPLUCON_TOTP_KEY). The heat pump is the first module index the
 probe found (.live/*/module_indexes.json) unless EPLUCON_MODULE_INDEX is set.
 `set` changes the real heat pump: it prints the value before and after.
+`zones` reads the zone setpoints, in tenths of a degree; a zone is set the same
+way, as `zone_<id>` (the API's zone id) and tenths (205 is 20.5 °C).
 """
 
 from __future__ import annotations
@@ -22,7 +26,7 @@ import aiohttp
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "custom_components"))
 
-from eplucon.eplucon_api.web_control import CONTROLS, EpluconWebControl  # noqa: E402
+from eplucon.eplucon_api.web_control import CONTROLS, EpluconWebControl, is_zone_key  # noqa: E402
 
 COOKIES = ROOT / ".live" / "client_cookies.json"
 
@@ -71,9 +75,11 @@ async def main(args: list[str]) -> None:
 
         if args[0] == "read":
             show(await client.async_get_states(index))
+        elif args[0] == "zones":
+            show(await client.async_get_zone_states(index))
         elif args[0] == "set":
             key, raw = args[1], args[2]
-            if key not in CONTROLS:
+            if key not in CONTROLS and not is_zone_key(key):
                 raise SystemExit(f"unknown control {key}; known: {', '.join(CONTROLS)}")
             value = float(raw) if "." in raw else int(raw)
             before = await client.async_get_state(index, key)

@@ -1,4 +1,4 @@
-"""Control a heat pump through the Eplucon portal website ("e-control").
+"""Control a heat pump and its zones through the Eplucon portal website ("e-control").
 
 The official API is read-only. The portal's own pages can change settings, so
 this client logs in like a browser and replays what the settings dialogs send.
@@ -111,6 +111,9 @@ class ControlState:
     step: float | None = None
     # Option value -> the portal's label, for switches and selects.
     options: dict[int, str] = field(default_factory=dict)
+    # The form field that carries the value: `tile_value` in the heat pump
+    # dialogs, `constant_temp` in a zone's setpoint form.
+    value_field: str = "tile_value"
 
     @property
     def is_number(self) -> bool:
@@ -162,6 +165,20 @@ def is_totp_secret(value: str) -> bool:
     except ValueError:
         return False
     return True
+
+
+# Zone setpoints are controls too, one per zone: `zone_<portal zone id>`, the
+# id the API reports for the zone. Their value is in tenths of a degree, as the
+# portal's form has it (205 is 20.5 °C).
+ZONE_KEY_PREFIX = "zone_"
+
+
+def zone_key(zone_id: int) -> str:
+    return f"{ZONE_KEY_PREFIX}{zone_id}"
+
+
+def is_zone_key(key: str) -> bool:
+    return key.startswith(ZONE_KEY_PREFIX)
 
 
 def portal_url_from_api(api_endpoint: str) -> str:
@@ -270,8 +287,53 @@ def parse_modal(key: str, html: str) -> ControlState:
     )
 
 
+def parse_zone_forms(html: str) -> dict[str, ControlState]:
+    """Read the constant temperature form of every zone on the zones page.
+
+    Each zone has a dialog with two forms posting to `set_constant_temp`: a
+    constant setpoint (`mode` constantTemp, the value in a range input named
+    `constant_temp`) and a temporary raise (`mode` timeLimit). Only the first
+    is used. The form's `data-id` is the zone id the API reports.
+    """
+    states: dict[str, ControlState] = {}
+    for match in re.finditer(r"(<form\b[^>]*>)(.*?)</form>", html, re.S):
+        form_attrs = _attrs(match.group(1))
+        action = form_attrs.get("data-action", "")
+        if "/set_constant_temp" not in action:
+            continue
+        fields: list[tuple[str, str]] = []
+        bounds: dict[str, str] = {}
+        for tag in re.findall(r"<input\b[^>]*>", match.group(2), re.S):
+            attrs = _attrs(tag)
+            if "name" not in attrs:
+                continue
+            if attrs.get("type", "").lower() == "range" and attrs["name"] == "constant_temp":
+                bounds = attrs
+            fields.append((attrs["name"], attrs.get("value", "")))
+        values = dict(fields)
+        if values.get("mode") != "constantTemp" or not bounds:
+            continue
+        try:
+            key = zone_key(int(form_attrs.get("data-id", "")))
+        except ValueError:
+            continue
+        value = _number(bounds.get("value"))
+        states[key] = ControlState(
+            key=key,
+            type=TYPE_INTEGER,
+            value=None if value is None else int(value),
+            action=unescape(action),
+            fields=fields,
+            min=_number(bounds.get("min")),
+            max=_number(bounds.get("max")),
+            step=_number(bounds.get("step")),
+            value_field="constant_temp",
+        )
+    return states
+
+
 class EpluconWebControl:
-    """Logged-in portal session for reading and changing heat pump settings."""
+    """Logged-in portal session for reading and changing heat pump and zone settings."""
 
     def __init__(
         self,
@@ -334,11 +396,35 @@ class EpluconWebControl:
         return states
 
     async def async_get_state(self, module_index: str, key: str) -> ControlState:
+        if is_zone_key(key):
+            states = await self.async_get_zone_states(module_index)
+            if key not in states:
+                raise WebControlError(
+                    f"The portal shows no setpoint for {key} of module {module_index}"
+                )
+            return states[key]
         spec = CONTROLS[key]
         if self._mock:
             return await self._mock_state(module_index, spec)
         html = await self._modal_html(module_index, spec)
         return parse_modal(key, html)
+
+    async def async_get_zone_states(self, module_index: str) -> dict[str, ControlState]:
+        """The setpoint of every zone of one zone controller, from its zones page."""
+        if self._mock:
+            html = await self._mock_text("zones.html")
+        else:
+            html = await self._zones_html(module_index)
+        states = parse_zone_forms(html)
+        if not states:
+            raise WebControlModuleUnknown(
+                f"The portal shows no zones for module index {module_index}"
+            )
+        if self._mock:
+            for key, stored in self._mock_values.get(module_index, {}).items():
+                if key in states:
+                    self._apply_mock_value(states[key], stored)
+        return states
 
     async def async_set_value(
         self, module_index: str, key: str, value: float | int
@@ -360,7 +446,7 @@ class EpluconWebControl:
             return state
 
         fields = [
-            (name, formatted if name == "tile_value" else val)
+            (name, formatted if name == state.value_field else val)
             for name, val in state.fields
         ]
         form = aiohttp.FormData()
@@ -441,6 +527,34 @@ class EpluconWebControl:
 
         raise AssertionError("unreachable")
 
+    async def _zones_html(self, module_index: str) -> str:
+        url = f"{self._portal}/e-control/zones"
+        params = {"account_module_index": module_index}
+
+        for attempt in (1, 2):
+            async with self._lock:
+                async with self._session.get(url, params=params) as response:
+                    status = response.status
+                    body = await response.text()
+
+            state = page_state(body) if status == 200 else None
+            if state == "ok":
+                return body
+            if attempt == 2 or state is None:
+                # The portal also answers 500 for a module index this login
+                # can't see.
+                raise WebControlError(
+                    f"Reading the zones of {module_index} failed with HTTP {status}"
+                    + (f" ({state} page)" if state else "")
+                )
+
+            # Sent to the login or the 2FA page: log in again.
+            _LOGGER.debug("Web control session not usable (%s page), logging in again", state)
+            async with self._lock:
+                await self._login()
+
+        raise AssertionError("unreachable")
+
     async def _login(self) -> None:
         """Bring the session to logged in. Caller holds the lock."""
         html = await self._get_page("/e-control")
@@ -492,21 +606,31 @@ class EpluconWebControl:
                 raise WebControlError(f"POST {path} failed with HTTP {response.status}")
             return await response.text()
 
-    async def _mock_state(self, module_index: str, spec: ControlSpec) -> ControlState:
-        path = MOCK_DIR / f"modal_{spec.code}.json"
+    async def _mock_text(self, name: str) -> str:
+        path = MOCK_DIR / name
         loop = asyncio.get_running_loop()
         try:
-            raw = await loop.run_in_executor(None, path.read_text, "utf-8")
+            return await loop.run_in_executor(None, path.read_text, "utf-8")
+        except OSError as err:
+            raise WebControlError(f"No usable mock data at {path}: {err}") from err
+
+    async def _mock_state(self, module_index: str, spec: ControlSpec) -> ControlState:
+        raw = await self._mock_text(f"modal_{spec.code}.json")
+        try:
             html = json.loads(raw)["html"]
-        except (OSError, ValueError, KeyError) as err:
-            raise WebControlError(f"No usable mock dialog at {path}: {err}") from err
+        except (ValueError, KeyError) as err:
+            raise WebControlError(f"No usable mock dialog for {spec.key}: {err}") from err
 
         state = parse_modal(spec.key, html)
         stored = self._mock_values.get(module_index, {}).get(spec.key)
         if stored is not None:
-            state.value = stored
-            state.fields = [
-                (name, str(stored) if name == "tile_value" else val)
-                for name, val in state.fields
-            ]
+            self._apply_mock_value(state, stored)
         return state
+
+    @staticmethod
+    def _apply_mock_value(state: ControlState, stored: float | int) -> None:
+        state.value = stored
+        state.fields = [
+            (name, str(stored) if name == state.value_field else val)
+            for name, val in state.fields
+        ]

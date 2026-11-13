@@ -114,7 +114,22 @@ The five `module` settings are tiles on the heat pump dashboard
 `menu` ones sit in its service menu (`/e-control/heatpump/service`).
 EpluControl used `menu` for 5700 and 5715; the dashboard tiles say `module`.
 
+## Zones
+
+A zone controller's zones each have a target temperature, set on the zones
+page rather than in a settings dialog:
+`GET /e-control/zones?account_module_index={zone controller}` (a full page, not
+an XHR) holds a `constantTemp` form per zone, posting to
+`/e-control/set_constant_temp`. The form's `data-id` is the zone id the API
+reports, and its `constant_temp` range input has the setpoint in tenths of a
+degree (`min=50 max=350 step=1`). The website saves it with the same
+`saveTileData` as the dialogs above, so the client posts it the same way, with
+`constant_temp` in place of `tile_value`. A lost session redirects the page to
+`/login` (or shows the 2FA form) and is handled like a lost session on the
+dialogs. Details, including the ids and the other answers of the page, are in
+[zones-api.md](zones-api.md).
+
 The dialogs under `custom_components/eplucon/eplucon_api/mock/webcontrol/` are
 the real ones, with the module index replaced by the mock heat pump's and the
-CSRF token by `mock-csrf-token`. Mock mode serves them and keeps written values
-in memory.
+CSRF token by `mock-csrf-token`. `zones.html` holds the real zone forms with
+the mock zones' ids. Mock mode serves them and keeps written values in memory.

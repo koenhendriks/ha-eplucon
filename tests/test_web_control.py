@@ -7,6 +7,7 @@ real settings dialogs shipped as mock data.
 """
 
 import json
+import re
 import secrets
 from urllib.parse import parse_qsl
 
@@ -21,14 +22,18 @@ from custom_components.eplucon.eplucon_api.web_control import (
     WebControlAuthError,
     WebControlModuleUnknown,
     WebControlTwoFactorInvalid,
+    WebControlError,
     WebControlTwoFactorRequired,
     is_totp_secret,
     parse_modal,
+    parse_zone_forms,
     portal_url_from_api,
     totp,
+    zone_key,
 )
 
 INDEX = "1aa111a1a1a111a1aa1111111aa11a11"
+ZONES_INDEX = "2aa222a2a2a222a2aa2222222aa22a22"
 # RFC 6238 test secret "12345678901234567890".
 TOTP_KEY = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ"
 
@@ -46,6 +51,10 @@ def mock_dialog(code: str) -> str:
     return json.loads((wc.MOCK_DIR / f"modal_{code}.json").read_text())["html"]
 
 
+def mock_zones_page() -> str:
+    return (wc.MOCK_DIR / "zones.html").read_text()
+
+
 class FakePortal:
     def __init__(self, *, two_factor: bool = False) -> None:
         self.username = "user@example.com"
@@ -56,6 +65,8 @@ class FakePortal:
         self.codes: list[str] = []
         self.saves: list[dict] = []
         self.values: dict[str, str] = {}
+        self.zone_saves: list[dict] = []
+        self.zone_values: dict[str, str] = {}  # internal zone id -> constant_temp
 
     def app(self) -> web.Application:
         app = web.Application()
@@ -65,6 +76,8 @@ class FakePortal:
         app.router.add_post("/2fa", self.second_factor)
         app.router.add_get("/e-control/ajax/modal/{code}", self.modal)
         app.router.add_post("/e-control/ajax/send_control_data", self.save)
+        app.router.add_get("/e-control/zones", self.zones)
+        app.router.add_post("/e-control/set_constant_temp", self.save_zone)
         return app
 
     def state(self, request) -> str | None:
@@ -131,6 +144,41 @@ class FakePortal:
         form = await request.post()
         self.saves.append({key: form.getall(key) for key in form})
         self.values[form["ido"]] = form["tile_value"]
+        return web.Response(text="1")
+
+
+    async def zones(self, request):
+        # A full page: without a session the portal redirects to the login.
+        state = self.state(request)
+        if state is None:
+            raise web.HTTPFound("/login")
+        if state == "2fa":
+            return web.Response(text=TWO_FA_PAGE.format(token="t"), content_type="text/html")
+        index = request.query.get("account_module_index")
+        if index == INDEX:
+            # The heat pump: a zones page without any zone on it.
+            return web.Response(text=DASHBOARD, content_type="text/html")
+        if index != ZONES_INDEX:
+            return web.Response(text="Server Error", status=500, content_type="text/html")
+        html = mock_zones_page().replace("https://portaal.eplucon.nl", str(request.url.origin()))
+        html = re.sub(r"<form\b.*?</form>", self._with_zone_value, html, flags=re.S)
+        return web.Response(text=html, content_type="text/html")
+
+    def _with_zone_value(self, form: re.Match) -> str:
+        html = form.group(0)
+        zone = re.search(r'name="zone_id" value="(\d+)"', html)
+        if zone is None or zone.group(1) not in self.zone_values:
+            return html
+        value = self.zone_values[zone.group(1)]
+        html = re.sub(r'(name="constant_temp" value=")\d+', rf"\g<1>{value}", html)
+        return re.sub(r'value="\d+"( step="1")', rf'value="{value}"\1', html)
+
+    async def save_zone(self, request):
+        if self.state(request) != "ok":
+            return web.json_response({"message": "Unauthenticated."}, status=401)
+        form = await request.post()
+        self.zone_saves.append({key: form.getall(key) for key in form})
+        self.zone_values[form["zone_id"]] = form["constant_temp"]
         return web.Response(text="1")
 
 
@@ -377,3 +425,101 @@ async def test_mock_mode_needs_no_portal():
 
     assert (await client.async_get_state(INDEX, "indoor_temperature")).value == 19.5
     assert (await client.async_get_state("other", "indoor_temperature")).value == 22.4
+
+
+# --- zones ---------------------------------------------------------------------
+
+
+def test_parse_zone_forms_reads_the_constant_temperature_form():
+    states = parse_zone_forms(mock_zones_page())
+
+    assert sorted(states) == [zone_key(i) for i in (3221, 3222, 3223, 3224, 3225)]
+    state = states[zone_key(3224)]
+    assert state.value == 245
+    assert (state.min, state.max, state.step) == (50, 350, 1)
+    assert state.value_field == "constant_temp"
+    # The ids the portal needs back, as the API's raw_data has them.
+    assert dict(state.fields) == {
+        "_token": "mock-csrf-token",
+        "active_schedule": "0",
+        "mode": "constantTemp",
+        "mode_id": "531",
+        "zone_id": "114",
+        "parent_id": "114",
+        "constant_temp": "245",
+    }
+    assert state.action.endswith(f"/e-control/set_constant_temp?account_module_index={ZONES_INDEX}")
+
+
+def test_a_zone_setpoint_must_be_in_the_form_range():
+    state = parse_zone_forms(mock_zones_page())[zone_key(3221)]
+
+    assert state.validate(206) == "206"
+    for value in (49, 351, 205.5):
+        with pytest.raises(ValueError):
+            state.validate(value)
+
+
+async def test_zone_setpoint_posts_the_form_like_the_browser(portal, session):
+    fake = await portal()
+    client = client_for(fake, session)
+
+    await client.async_set_value(ZONES_INDEX, zone_key(3222), 215)
+
+    (save,) = fake.zone_saves
+    assert save["constant_temp"] == ["215"]
+    assert save["mode"] == ["constantTemp"] and save["active_schedule"] == ["0"]
+    assert (save["zone_id"], save["parent_id"], save["mode_id"]) == (["111"], ["111"], ["501"])
+    assert save["_token"] == ["mock-csrf-token"]
+    assert {"name": "constant_temp", "value": "215"} in json.loads(save["data"][0])
+    assert ("constant_temp", "215") in parse_qsl(save["dataSerialize"][0])
+    # Only the zone that was written changes.
+    states = await client.async_get_zone_states(ZONES_INDEX)
+    assert states[zone_key(3222)].value == 215
+    assert states[zone_key(3221)].value == 240
+    assert fake.saves == []
+
+
+async def test_zones_page_logs_in_again_when_the_session_is_gone(portal, session):
+    fake = await portal(two_factor=True)
+    client = client_for(fake, session, two_factor=TOTP_KEY)
+    await client.async_login()
+    fake.expire_sessions()
+
+    states = await client.async_get_zone_states(ZONES_INDEX)
+
+    assert states[zone_key(3221)].value == 240
+    assert fake.logins == 2
+
+
+async def test_zones_of_a_module_without_zones_are_reported(portal, session):
+    fake = await portal()
+    client = client_for(fake, session)
+
+    with pytest.raises(WebControlModuleUnknown):
+        await client.async_get_zone_states(INDEX)
+    with pytest.raises(WebControlError, match="HTTP 500"):
+        await client.async_get_zone_states("0" * 32)
+    with pytest.raises(WebControlError, match="no setpoint"):
+        await client.async_set_value(ZONES_INDEX, zone_key(9999), 200)
+    assert fake.logins == 1 and fake.zone_saves == []
+
+
+async def test_zone_setpoint_out_of_range_is_never_sent(portal, session):
+    fake = await portal()
+    client = client_for(fake, session)
+
+    with pytest.raises(ValueError):
+        await client.async_set_value(ZONES_INDEX, zone_key(3221), 400)
+
+    assert fake.zone_saves == []
+
+
+async def test_mock_mode_keeps_zone_setpoints():
+    client = EpluconWebControl("https://portal.invalid", "u", "p", None, use_mock_data=True)
+
+    await client.async_set_value(ZONES_INDEX, zone_key(3223), 190)
+
+    states = await client.async_get_zone_states(ZONES_INDEX)
+    assert states[zone_key(3223)].value == 190
+    assert dict(states[zone_key(3223)].fields)["constant_temp"] == "190"
