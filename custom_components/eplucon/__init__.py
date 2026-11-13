@@ -386,12 +386,15 @@ async def _async_setup_web_control(
         use_mock_data=use_mock_data,
     )
 
-    heat_pumps = [
-        device
-        for device in [await device_dict_to_dto(d) for d in entry.data["devices"]]
-        if device.type in HEAT_PUMP_TYPES
-    ]
-    web_coordinator = EpluconWebCoordinator(hass, entry, client, heat_pumps)
+    devices = [await device_dict_to_dto(d) for d in entry.data["devices"]]
+    web_coordinator = EpluconWebCoordinator(
+        hass,
+        entry,
+        client,
+        [device for device in devices if device.type in HEAT_PUMP_TYPES],
+        [device for device in devices if device.type in ZONE_CONTROLLER_TYPES],
+        hass.data[DOMAIN][entry.entry_id],
+    )
     # Not the first-refresh variant: a portal hiccup leaves the controls
     # unavailable until the next poll instead of failing the whole entry.
     await web_coordinator.async_refresh()

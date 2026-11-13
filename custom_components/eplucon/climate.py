@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from typing import Any
 
 from dacite import from_dict
@@ -12,14 +13,19 @@ from homeassistant.components.climate import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_TEMPERATURE, UnitOfTemperature
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
+from homeassistant.helpers.entity import EntityDescription
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
 from .control_entity import heat_pump_device_info, web_coordinator
 from .eplucon_api.DTO.DeviceDTO import DeviceDTO
+from .eplucon_api.DTO.ZoneDTO import ZoneDTO
+from .eplucon_api.web_control import zone_key
 from .web_coordinator import EpluconWebCoordinator
+from .zone_entity import EpluconZoneEntity, zones_of
 
 # heatpump_active: 0 off, 1 on, 2 emergency operation, 3 APX.
 ACTIVE_OFF = 0
@@ -57,10 +63,18 @@ async def async_setup_entry(
     if coordinator is None:
         return
     api_coordinator = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities(
+    entities: list[ClimateEntity] = [
         EpluconClimate(coordinator, api_coordinator, device)
         for device in coordinator.heat_pumps
+    ]
+
+    # The zones come from the API, like the zone sensors: a zone the API
+    # didn't report at setup gets its thermostat after a reload.
+    entities.extend(
+        EpluconZoneClimate(api_coordinator, coordinator, device, zone)
+        for device, zone in zones_of(api_coordinator.data)
     )
+    async_add_entities(entities)
 
 
 class EpluconClimate(CoordinatorEntity[EpluconWebCoordinator], ClimateEntity):
@@ -189,9 +203,178 @@ class EpluconClimate(CoordinatorEntity[EpluconWebCoordinator], ClimateEntity):
         await self.coordinator.async_set_value(self._module_index, "heatpump_active", ACTIVE_OFF)
 
 
+ZONE_CLIMATE = EntityDescription(key="climate", name=None)
+
+# The portal's zone form: 5-35 °C in tenths of a degree. The form's own bounds
+# apply once web control has read it.
+ZONE_MIN_TEMP = 5.0
+ZONE_MAX_TEMP = 35.0
+ZONE_TEMP_STEP = 0.1
+
+
+class EpluconZoneClimate(EpluconZoneEntity, ClimateEntity):
+    """A zone's control panel as a thermostat.
+
+    Readings come from the API every update interval, the setpoint is written
+    through web control. Writing it puts the zone on a constant temperature,
+    as the portal's own "Constante temperatuur" dialog does, overriding the
+    zone's schedule. The zone heats or cools as the heat pump does: its HVAC
+    mode only reports that and can't be changed here.
+
+    The readings stay available while web control is down; only setting the
+    target is refused then.
+    """
+
+    _attr_native_temperature_unit = UnitOfTemperature.CELSIUS
+    _attr_supported_features = ClimateEntityFeature.TARGET_TEMPERATURE
+    _attr_target_temperature_step = ZONE_TEMP_STEP
+
+    def __init__(
+        self,
+        api_coordinator,
+        web: EpluconWebCoordinator,
+        device: DeviceDTO,
+        zone: ZoneDTO,
+    ) -> None:
+        super().__init__(api_coordinator, device, zone, ZONE_CLIMATE)
+        self._web = web
+        self._key = zone_key(zone.id)
+        # This zone's target as each source last reported it, and when that
+        # changed: the target comes from the source that changed last. Only a
+        # change counts. Both coordinators tell every entity about every update
+        # (a write to another zone, or the API repeating its last data during
+        # an outage), which says nothing new about this zone.
+        self._api_seen: float | None = None
+        self._web_seen: float | int | None = None
+        self._api_at = 0.0
+        self._web_at = 0.0
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        # What there is at the start is no change from either source.
+        self._api_seen = self._api_target()
+        self._web_seen = self._web_value()
+        self.async_on_remove(self._web.async_add_listener(self._handle_web_update))
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        reported = self._api_target()
+        if reported != self._api_seen:
+            self._api_seen, self._api_at = reported, time.monotonic()
+        super()._handle_coordinator_update()
+
+    @callback
+    def _handle_web_update(self) -> None:
+        value = self._web_value()
+        if value != self._web_seen:
+            self._web_seen, self._web_at = value, time.monotonic()
+        self.async_write_ha_state()
+
+    def _api_target(self) -> float | None:
+        zone = self.zone
+        return None if zone is None else self._number(zone.set_temperature)
+
+    def _web_value(self) -> float | int | None:
+        state = self._web_state()
+        return None if state is None else state.value
+
+    def _web_state(self):
+        """The zone's form as web control last read it, if web control works."""
+        if not self._web.last_update_success:
+            return None
+        return self._web.state(self._module_index, self._key)
+
+    @staticmethod
+    def _number(value) -> float | None:
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return None
+
+    @property
+    def native_current_temperature(self) -> float | None:
+        zone = self.zone
+        return None if zone is None else self._number(zone.current_temperature)
+
+    @property
+    def current_humidity(self) -> float | None:
+        zone = self.zone
+        return None if zone is None else self._number(zone.humidity)
+
+    @property
+    def native_target_temperature(self) -> float | None:
+        reported = self._api_target()
+        value = self._web_value()
+        if value is None:
+            return reported
+        # While a write waits for the portal to report it, web control holds
+        # the value sent. Otherwise the target is whichever source changed
+        # last: a write, or a change on the control panel the API reported.
+        if (
+            reported is None
+            or self._web.is_pending(self._module_index, self._key)
+            or self._web_at > self._api_at
+        ):
+            return value / 10
+        return reported
+
+    def _bound(self, attr: str, default: float) -> float:
+        state = self._web_state()
+        value = getattr(state, attr, None) if state is not None else None
+        return default if value is None else value / 10
+
+    @property
+    def min_temp(self) -> float:
+        return self._bound("min", ZONE_MIN_TEMP)
+
+    @property
+    def max_temp(self) -> float:
+        return self._bound("max", ZONE_MAX_TEMP)
+
+    @property
+    def hvac_mode(self) -> HVACMode:
+        zone = self.zone
+        if zone is not None and str(zone.algorithm).lower() == "cooling":
+            return HVACMode.COOL
+        return HVACMode.HEAT
+
+    @property
+    def hvac_modes(self) -> list[HVACMode]:
+        return [self.hvac_mode]
+
+    @property
+    def hvac_action(self) -> HVACAction | None:
+        zone = self.zone
+        if zone is None or zone.relay_state is None:
+            return None
+        if str(zone.relay_state).lower() != "on":
+            return HVACAction.IDLE
+        return HVACAction.COOLING if self.hvac_mode == HVACMode.COOL else HVACAction.HEATING
+
+    async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
+        if hvac_mode != self.hvac_mode:
+            raise ServiceValidationError(
+                "A zone heats or cools as the heat pump does; change the heat "
+                "pump's operation mode instead"
+            )
+
+    async def async_set_temperature(self, **kwargs: Any) -> None:
+        temperature = kwargs.get(ATTR_TEMPERATURE)
+        if temperature is None:
+            return
+        if self._web_state() is None:
+            raise HomeAssistantError(
+                "Eplucon web control can't read this zone from the portal at the "
+                "moment, so its target temperature can't be set"
+            )
+        target = round(float(temperature), 1)
+        await self._web.async_set_value(self._module_index, self._key, round(target * 10))
+
+
 # Home Assistant 2026.11 reads the native_* names and warns about the old ones;
 # older releases only know the old ones. Drop this once 2026.11 is the minimum.
 if not hasattr(ClimateEntity, "native_target_temperature"):
-    EpluconClimate._attr_temperature_unit = UnitOfTemperature.CELSIUS
-    EpluconClimate.current_temperature = property(lambda self: self.native_current_temperature)
-    EpluconClimate.target_temperature = property(lambda self: self.native_target_temperature)
+    for _cls in (EpluconClimate, EpluconZoneClimate):
+        _cls._attr_temperature_unit = UnitOfTemperature.CELSIUS
+        _cls.current_temperature = property(lambda self: self.native_current_temperature)
+        _cls.target_temperature = property(lambda self: self.native_target_temperature)

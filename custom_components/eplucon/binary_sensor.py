@@ -13,10 +13,9 @@ from .const import (
     MANUFACTURER,
     BINARY_SENSORS,
     ZONE_BINARY_SENSORS,
-    ZONE_CONTROLLER_TYPES,
 )
 from .eplucon_api.DTO.DeviceDTO import DeviceDTO
-from .zone_entity import EpluconZoneEntity
+from .zone_entity import EpluconZoneEntity, zones_of
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -45,14 +44,13 @@ async def async_setup_entry(
                 EpluconBinarySensorEntity(coordinator, device, description)
             )
 
-        # Per-zone binary sensors for zone controllers
-        if device.type in ZONE_CONTROLLER_TYPES and device.zones:
-            for zone in device.zones:
-                for description in ZONE_BINARY_SENSORS:
-                    if description.exists_fn(zone):
-                        entities.append(
-                            EpluconZoneBinarySensorEntity(coordinator, device, zone, description)
-                        )
+    # Per-zone binary sensors for zone controllers
+    for device, zone in zones_of(coordinator.data):
+        for description in ZONE_BINARY_SENSORS:
+            if description.exists_fn(zone):
+                entities.append(
+                    EpluconZoneBinarySensorEntity(coordinator, device, zone, description)
+                )
 
     _LOGGER.debug("Adding %d binary sensor entities", len(entities))
     async_add_entities(entities)
