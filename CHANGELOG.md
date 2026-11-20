@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [2.1.1](https://github.com/koenhendriks/ha-eplucon/releases/2.1.1) - 2026-11-20
+
+### Fixed
+* ([#50](https://github.com/koenhendriks/ha-eplucon/pull/50)) After a Home Assistant restart the integration could fail to set up with `dacite.exceptions.WrongTypeError: wrong value type for field "realtime_info.common.operation_mode" - should be "int" instead of value "None"`, and it never recovered on its own. Saving the options stores the module list in the config entry together with the realtime values of that moment, and the API sometimes sends `operation_mode: null`. The stored modules are now loaded without type checks, the same way the refresh already reads the API data, so a stored `null` no longer blocks setup. By [@christianvaes](https://github.com/christianvaes)
+
 ## [2.1.0](https://github.com/koenhendriks/ha-eplucon/releases/2.1.0) - 2026-11-13
 
 Big thanks to [@knz](https://github.com/knz) for this release.
