@@ -19,7 +19,7 @@ from homeassistant.helpers.aiohttp_client import (
 )
 from homeassistant.helpers import device_registry
 
-from dacite import from_dict
+from dacite import Config, from_dict
 
 from .const import (
     DOMAIN,
@@ -106,7 +106,10 @@ async def fetch_with_retry(func, *args, retries=3, delay=2):
 async def device_dict_to_dto(device: DeviceDTO | dict) -> DeviceDTO:
     """Ensure device is DeviceDTO."""
     if isinstance(device, dict):
-        device = from_dict(data_class=DeviceDTO, data=device)
+        # The stored dict holds unvalidated API data, as the refresh path does.
+        device = from_dict(
+            data_class=DeviceDTO, data=device, config=Config(check_types=False)
+        )
     return device
 
 
