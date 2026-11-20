@@ -13,6 +13,22 @@ from custom_components.eplucon.const import (
 )
 from custom_components.eplucon.eplucon_api.eplucon_client import BASE_URL
 
+# Only the identity of each module: what the flows store in the config entry.
+MOCK_MODULES = [
+    {
+        "id": 1001337,
+        "account_module_index": "1aa111a1a1a111a1aa1111111aa11a11",
+        "name": "Mock Heatpump",
+        "type": "heat_pump",
+    },
+    {
+        "id": 1007331,
+        "account_module_index": "2aa222a2a2a222a2aa2222222aa22a22",
+        "name": "Mock Tech controller",
+        "type": "zones_system_controller",
+    },
+]
+
 
 def test_developer_options_are_off_and_collapsed_by_default():
     schema = build_schema()({CONF_API_TOKEN: "token", CONF_DEVELOPER_OPTIONS: {}})
@@ -52,10 +68,7 @@ async def test_flow_with_mock_data_needs_no_working_token(hass):
 
     assert result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY
     assert result["data"][CONF_USE_MOCK_DATA] is True
-    assert [device.name for device in result["data"]["devices"]] == [
-        "Mock Heatpump",
-        "Mock Tech controller",
-    ]
+    assert result["data"]["devices"] == MOCK_MODULES
 
 
 async def test_options_flow_keeps_the_endpoint_and_the_mock_switch(hass):
@@ -85,10 +98,7 @@ async def test_options_flow_keeps_the_endpoint_and_the_mock_switch(hass):
     assert entry.data[CONF_API_TOKEN] == "another-token"
     assert entry.data[CONF_API_ENDPOINT] == BASE_URL
     assert entry.data[CONF_USE_MOCK_DATA] is True
-    assert [device.name for device in entry.data["devices"]] == [
-        "Mock Heatpump",
-        "Mock Tech controller",
-    ]
+    assert entry.data["devices"] == MOCK_MODULES
 
 
 async def test_setup_migrates_an_entry_still_pointing_at_the_mock_host(hass):

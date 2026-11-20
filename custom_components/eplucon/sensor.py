@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-from dacite import from_dict
 from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -35,20 +34,14 @@ async def async_setup_entry(
     await coordinator.async_config_entry_first_refresh()
     devices = coordinator.data
 
-    list_device_dto = []
-    for device in devices:
-        if isinstance(device, dict):
-            device = from_dict(data_class=DeviceDTO, data=device)
-        list_device_dto.append(device)
-
     entities = []
-    for device in list_device_dto:
+    for device in devices:
         for description in SENSORS:
             if description.exists_fn(device):
                 entities.append(EpluconSensorEntity(coordinator, device, description))
 
     # Per-zone sensors for zone controllers
-    for device, zone in zones_of(list_device_dto):
+    for device, zone in zones_of(devices):
         for description in ZONE_SENSORS:
             if description.exists_fn(zone):
                 entities.append(
@@ -96,8 +89,6 @@ class EpluconSensorEntity(CoordinatorEntity, SensorEntity):
     def _update_device_data(self):
         """Update internal device data from coordinator."""
         for updated_device in self.coordinator.data:
-            if isinstance(updated_device, dict):
-                updated_device = from_dict(data_class=DeviceDTO, data=updated_device)
             if updated_device.id == self.device.id:
                 old_value = self.entity_description.value_fn(self.device)
                 new_value = self.entity_description.value_fn(updated_device)

@@ -3,7 +3,6 @@ from __future__ import annotations
 import logging
 import time
 import asyncio
-import dataclasses
 from datetime import timedelta
 from typing import Dict
 
@@ -19,7 +18,7 @@ from homeassistant.helpers.aiohttp_client import (
 )
 from homeassistant.helpers import device_registry
 
-from dacite import Config, from_dict
+from dacite import from_dict
 
 from .const import (
     DOMAIN,
@@ -45,6 +44,7 @@ from .eplucon_api.eplucon_client import (
     DeviceDTO,
     BASE_URL,
 )
+from .eplucon_api.DTO.DeviceDTO import stored_device
 from .eplucon_api.web_control import EpluconWebControl, portal_url_from_api
 from .web_coordinator import EpluconWebCoordinator, session_store
 
@@ -104,13 +104,12 @@ async def fetch_with_retry(func, *args, retries=3, delay=2):
 
 
 async def device_dict_to_dto(device: DeviceDTO | dict) -> DeviceDTO:
-    """Ensure device is DeviceDTO."""
-    if isinstance(device, dict):
-        # The stored dict holds unvalidated API data, as the refresh path does.
-        device = from_dict(
-            data_class=DeviceDTO, data=device, config=Config(check_types=False)
-        )
-    return device
+    """Build a fresh DeviceDTO from a module stored in the config entry.
+
+    Always a new object: the refresh fills in its realtime values, and doing
+    that on the object held in entry.data got them saved with the entry.
+    """
+    return from_dict(data_class=DeviceDTO, data=stored_device(device))
 
 
 async def _update_heat_pump(client, device: DeviceDTO, hass: HomeAssistant) -> DeviceDTO:
@@ -192,7 +191,7 @@ async def _ensure_supported_devices(hass: HomeAssistant, entry: ConfigEntry, cli
     existing_ids = {_device_id(d) for d in existing}
 
     missing = [
-        dataclasses.asdict(dev)
+        stored_device(dev)
         for dev in fetched
         if dev.type in SUPPORTED_TYPES and dev.id not in existing_ids
     ]
@@ -232,6 +231,18 @@ def _migrate_legacy_mock_endpoint(hass: HomeAssistant, entry: ConfigEntry) -> No
     )
 
 
+def _drop_stored_snapshots(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Strip the realtime values and zones older versions stored per module."""
+    devices = entry.data.get("devices", [])
+    stored = [stored_device(device) for device in devices]
+    if stored == devices:
+        return
+
+    hass.config_entries.async_update_entry(
+        entry, data={**entry.data, "devices": stored}
+    )
+
+
 # ----------------------------
 # Setup entry
 # ----------------------------
@@ -239,6 +250,7 @@ def _migrate_legacy_mock_endpoint(hass: HomeAssistant, entry: ConfigEntry) -> No
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Eplucon from a config entry."""
     _migrate_legacy_mock_endpoint(hass, entry)
+    _drop_stored_snapshots(hass, entry)
 
     api_token = entry.data[CONF_API_TOKEN]
     api_endpoint = entry.data.get(CONF_API_ENDPOINT, BASE_URL)

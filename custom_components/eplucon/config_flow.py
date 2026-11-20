@@ -1,7 +1,7 @@
 import logging
 import aiohttp
 import voluptuous as vol
-from typing import Any, Dict, Optional
+from typing import Any, Callable, Dict, Optional
 from homeassistant import config_entries
 from homeassistant.const import CONF_SCAN_INTERVAL
 from homeassistant.core import HomeAssistant, callback
@@ -28,6 +28,7 @@ from .const import (
     MIN_SCAN_INTERVAL,
     MAX_SCAN_INTERVAL,
 )
+from .eplucon_api.DTO.DeviceDTO import stored_device
 from .eplucon_api.eplucon_client import EpluconApi, ApiAuthError, ApiError, BASE_URL
 from .eplucon_api.web_control import (
     EpluconWebControl,
@@ -191,6 +192,21 @@ async def async_validate_web_control(
     return data, None
 
 
+def supported_devices(devices: list, log: Callable[..., None]) -> list[dict]:
+    """Return the supported modules in the shape they are stored in the entry."""
+    supported = []
+    for device in devices:
+        if device.type in SUPPORTED_TYPES:
+            supported.append(stored_device(device))
+        else:
+            log(
+                "Device %s with type %s is not supported yet. Skipping...",
+                device.name,
+                device.type,
+            )
+    return supported
+
+
 class EpluconConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Eplucon."""
 
@@ -222,15 +238,11 @@ class EpluconConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             )
 
             try:
-                devices = await client.get_devices()
+                fetched = await client.get_devices()
 
-                _LOGGER.debug(f"Received the following devices from API: {devices}")
+                _LOGGER.debug(f"Received the following devices from API: {fetched}")
 
-                for device in devices:
-                    if device.type not in SUPPORTED_TYPES:
-                        _LOGGER.warning(
-                            f"Device {device.name} with type {device.type} is not supported yet. Skipping...")
-                        devices.remove(device)
+                devices = supported_devices(fetched, _LOGGER.warning)
 
                 if not devices:
                     errors["base"] = "no-devices"
@@ -318,16 +330,11 @@ class EpluconOptionsFlowHandler(config_entries.OptionsFlow):
             )
 
             try:
-                devices = await client.get_devices()
+                fetched = await client.get_devices()
 
-                _LOGGER.info(f"Devices found: {devices}")
+                _LOGGER.info(f"Devices found: {fetched}")
 
-                # Skip unsupported devices
-                for device in devices:
-                    if device.type not in SUPPORTED_TYPES:
-                        _LOGGER.debug(
-                            f"Device {device.name} with type {device.type} is not supported yet. Skipping...")
-                        devices.remove(device)
+                devices = supported_devices(fetched, _LOGGER.debug)
 
                 web_data, web_error = (
                     await async_validate_web_control(

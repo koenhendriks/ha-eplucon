@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-from dacite import from_dict
 from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -14,7 +13,6 @@ from .const import (
     BINARY_SENSORS,
     ZONE_BINARY_SENSORS,
 )
-from .eplucon_api.DTO.DeviceDTO import DeviceDTO
 from .zone_entity import EpluconZoneEntity, zones_of
 
 _LOGGER = logging.getLogger(__name__)
@@ -33,9 +31,6 @@ async def async_setup_entry(
     entities: list[BinarySensorEntity] = []
 
     for device in coordinator.data:
-        if isinstance(device, dict):
-            device = from_dict(DeviceDTO, device)
-
         for description in BINARY_SENSORS:
             if description.exists_fn and not description.exists_fn(device):
                 continue
@@ -91,8 +86,6 @@ class EpluconBinarySensorEntity(CoordinatorEntity, BinarySensorEntity):
     def _update_device_data(self):
         """Update internal device data from coordinator."""
         for updated_device in self.coordinator.data:
-            if isinstance(updated_device, dict):
-                updated_device = from_dict(data_class=DeviceDTO, data=updated_device)
             if updated_device.id == self.device.id:
                 old_value = self.entity_description.value_fn(self.device)
                 new_value = self.entity_description.value_fn(updated_device)
@@ -112,9 +105,6 @@ class EpluconBinarySensorEntity(CoordinatorEntity, BinarySensorEntity):
 
     def _handle_coordinator_update(self) -> None:
         for updated_device in self.coordinator.data:
-            if isinstance(updated_device, dict):
-                updated_device = from_dict(DeviceDTO, updated_device)
-
             if updated_device.id == self.device.id:
                 self.device = updated_device
                 break

@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Fixed
+* The config entry no longer stores the API data of the moment the integration was set up or its options were saved. Only each module's id, name and type are kept; the realtime values and zones that were stored with them are removed at the next start. That stored data was what made setup fail in [#50](https://github.com/koenhendriks/ha-eplucon/pull/50), and after a restart it could also show up as current values: when the first refresh returned no valid data, the sensors showed the temperatures and operating hours from the last time the options were saved. They now stay unknown until the API answers with valid data. Stored modules are type checked again, as before 2.1.1.
+* When the module list had two unsupported modules in a row, the setup and options dialogs kept the second one.
+
 ## [2.1.1](https://github.com/koenhendriks/ha-eplucon/releases/2.1.1) - 2026-11-20
 
 ### Fixed

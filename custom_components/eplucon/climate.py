@@ -3,8 +3,6 @@ from __future__ import annotations
 import time
 from typing import Any
 
-from dacite import from_dict
-
 from homeassistant.components.climate import (
     ClimateEntity,
     ClimateEntityFeature,
@@ -109,8 +107,6 @@ class EpluconClimate(CoordinatorEntity[EpluconWebCoordinator], ClimateEntity):
 
     def _common(self):
         for device in self._api_coordinator.data or []:
-            if isinstance(device, dict):
-                device = from_dict(data_class=DeviceDTO, data=device)
             if device.id == self._device.id:
                 realtime = device.realtime_info
                 return realtime.common if realtime is not None else None
